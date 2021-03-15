@@ -5,8 +5,6 @@ const GlobalModel = {
   state: {
     logList: [],
     rankList: [],
-    sTime: '',
-    sPlayer: '',
     stat: {},
     playerList: [],
     isRuning: true

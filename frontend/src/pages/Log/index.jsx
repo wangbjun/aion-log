@@ -102,8 +102,12 @@ class Log extends React.Component {
 
   componentDidMount() {
     const parsedUrlQuery = parse(window.location.href.split('?')[1]);
-    if (parsedUrlQuery.player) {
-      this.formRef.current.setFieldsValue({player: parsedUrlQuery.player})
+    let param = parsedUrlQuery.player
+    if (param) {
+      if (param.endsWith("#/")) {
+        param = param.substring(0, param.lastIndexOf("#/"))
+      }
+      this.formRef.current.setFieldsValue({player: param})
     } else {
       this.formRef.current.setFieldsValue({
         time: [moment().subtract(6, 'day').startOf('day'), moment().endOf('day')]
@@ -115,17 +119,12 @@ class Log extends React.Component {
   async searchTime(row) {
     await this.formRef.current.setFieldsValue({time: [moment(row.time), moment(row.time)], player: row.player})
     await this.setState({page: 1})
+    this.props.history.push("/log?player="+row.player)
     this.query().then()
   }
 
   query = async (d, ds) => {
-    const {dispatch, sTime, sPlayer} = this.props
-    if (sTime) {
-      this.formRef.current.setFieldsValue({time: [moment(sTime), moment(sTime)]})
-    }
-    if (sPlayer) {
-      this.formRef.current.setFieldsValue({player: sPlayer})
-    }
+    const {dispatch} = this.props
     const fieldValue = this.formRef.current.getFieldValue();
     let st = fieldValue.time && fieldValue.time[0].format("YYYY-MM-DD HH:mm:ss")
     let et = fieldValue.time && fieldValue.time[1].format("YYYY-MM-DD HH:mm:ss")
@@ -158,6 +157,7 @@ class Log extends React.Component {
       time: [moment().subtract(6, 'day').startOf('day'), moment().endOf('day')]
     })
     await this.setState({page: 1})
+    this.props.history.push("/log")
     this.query().then()
   };
 
