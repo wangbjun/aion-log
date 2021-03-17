@@ -1,4 +1,5 @@
 import {addTask, changePlayerType, getTask, queryLogList, queryPlayer, queryRankList, queryStat} from "@/services/api";
+import moment from "moment";
 
 const GlobalModel = {
   namespace: 'global',
@@ -7,7 +8,7 @@ const GlobalModel = {
     rankList: [],
     stat: {},
     playerList: [],
-    isRuning: true
+    taskStatus: {}
   },
   effects: {
     * fetchLogList({payload}, {call, put, select}) {
@@ -46,6 +47,16 @@ const GlobalModel = {
     * fetchPlayerList({payload}, {call, put, select}) {
       const result = yield call(queryPlayer, payload);
       let list = result.data.list
+      if (payload.st) {
+        list = list.filter(v => {
+          return moment(v.time).isAfter(moment(payload.st))
+        })
+      }
+      if (payload.et) {
+        list = list.filter(v => {
+          return moment(v.time).isBefore(moment(payload.et))
+        })
+      }
       if (payload.name) {
         list = list.filter(v => {
           return v.name.indexOf(payload.name) !== -1
@@ -71,7 +82,7 @@ const GlobalModel = {
       yield put({
         type: 'saveDefault',
         payload: {
-          isRuning: result.data,
+          taskStatus: result.data,
         },
       });
     },

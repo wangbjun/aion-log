@@ -164,7 +164,11 @@ func (r battleController) ChangePlayerType(ctx *gin.Context) {
 }
 
 func (r battleController) GetTask(ctx *gin.Context) {
-	r.Success(ctx, "ok", taskManager.IsRuning())
+	lastTime := model.BattleLog{}.GetLastTime()
+	r.Success(ctx, "ok", map[string]interface{}{
+		"lastTime": lastTime,
+		"isRuning": taskManager.IsRuning(),
+	})
 }
 
 func (r battleController) AddTask(ctx *gin.Context) {

@@ -3,7 +3,7 @@ import React from 'react';
 import {PageContainer} from '@ant-design/pro-layout';
 import {connect} from "@/.umi/plugin-dva/exports";
 import moment from "moment";
-import {Link} from 'dva/router'
+import {Link} from 'umi';
 
 const {RangePicker} = DatePicker
 const {Option} = Select
@@ -39,7 +39,7 @@ class Player extends React.Component {
         title: "种族",
         dataIndex: 'type',
         key: 'type',
-        width: '20%',
+        width: '15%',
         sorter: function (a, b) {
           return a.type - b.type
         },
@@ -59,7 +59,7 @@ class Player extends React.Component {
         title: "职业",
         dataIndex: 'job',
         key: 'job',
-        width: '20%',
+        width: '15%',
         sorter: function (a, b) {
           return a.job.localeCompare(b.job)
         },
@@ -83,7 +83,7 @@ class Player extends React.Component {
         title: "操作",
         dataIndex: 'option',
         key: 'option',
-        width: '20%',
+        width: '30%',
         render: this.renderOption
       },
     ];
@@ -116,9 +116,12 @@ class Player extends React.Component {
   query = () => {
     const {dispatch} = this.props
     const fieldValue = this.formRef.current.getFieldValue();
+    let st = fieldValue.time && fieldValue.time[0].format("YYYY-MM-DD HH:mm:ss")
+    let et = fieldValue.time && fieldValue.time[1].format("YYYY-MM-DD HH:mm:ss")
     dispatch({
       type: 'global/fetchPlayerList',
       payload: {
+        st,et,
         name: fieldValue.name,
         type: fieldValue.type
       }
@@ -134,6 +137,7 @@ class Player extends React.Component {
     const onFinish = async () => {
       this.query()
     };
+    const dateFormat = 'YYYY-MM-DD HH:mm:ss';
     return (
       <Form
         layout="inline"
@@ -141,6 +145,20 @@ class Player extends React.Component {
         autoComplete="false"
         ref={this.formRef}
       >
+        <Form.Item label="时间" name="time" style={{marginTop: "5px"}}>
+          <RangePicker
+            format={dateFormat}
+            ranges={{
+              今天: [moment().startOf('day'), moment().endOf('day')],
+              昨天: [moment().subtract(1, 'day').startOf('day'), moment().subtract(1, 'day').endOf('day')],
+              最近三天: [moment().subtract(2, 'day').startOf('day'), moment().endOf('day')],
+              最近一周: [moment().subtract(6, 'day').startOf('day'), moment().endOf('day')],
+            }}
+            allowClear
+            showTime={{defaultValue: moment('00:00:00', 'HH:mm:ss')}}
+            onChange={(d, ds) => this.query(d, ds)}
+          />
+        </Form.Item>
         <Form.Item label="玩家" name="name" style={{marginTop: "5px"}}>
           <Input allowClear placeholder="请输入"/>
         </Form.Item>

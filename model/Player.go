@@ -38,7 +38,11 @@ func (r Player) SaveType() error {
 	var existed Player
 	err := DB().First(&existed, "name = ?", r.Name).Error
 	if err == nil {
-		return DB().Model(&existed).UpdateColumns(Player{Time: r.Time, Type: r.Type}).Error
+		var update = Player{Time: r.Time}
+		if r.Type != 0 {
+			update = Player{Time: r.Time, Type: r.Type}
+		}
+		return DB().Model(&existed).UpdateColumns(update).Error
 	} else if err == gorm.ErrRecordNotFound {
 		return DB().Create(&r).Error
 	}

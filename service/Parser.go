@@ -5,12 +5,14 @@ import (
 	"aion/util"
 	"aion/zlog"
 	"bufio"
+	"fmt"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"io"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -28,6 +30,7 @@ type Parser struct {
 	fileChan   chan string
 	saveChan   chan model.Log
 	playerType map[string]model.Player
+	mapLocker  *sync.Mutex
 	isRuning   bool
 }
 
@@ -36,6 +39,7 @@ func NewParser() Parser {
 		fileChan:   make(chan string, 1),
 		saveChan:   make(chan model.Log, 1),
 		playerType: make(map[string]model.Player),
+		mapLocker:  new(sync.Mutex),
 		isRuning:   false,
 	}
 }
@@ -104,6 +108,7 @@ func (r Parser) Run(fileName string) error {
 		} else if regKillB.Match(line) {
 			r.parseKillC(text)
 		}
+		time.Sleep(time.Microsecond * 500)
 	}
 	return nil
 }
@@ -133,6 +138,16 @@ func (r Parser) parseDamageA(line string) {
 		Time:         t,
 		OriginDesc:   line[22:],
 	}
+	r.mapLocker.Lock()
+	r.playerType[player] = model.Player{
+		Name: player,
+		Time: t,
+	}
+	r.playerType[match[2]] = model.Player{
+		Name: match[2],
+		Time: t,
+	}
+	r.mapLocker.Unlock()
 }
 
 func (r Parser) parseDamageB(line string) {
@@ -157,6 +172,16 @@ func (r Parser) parseDamageB(line string) {
 		Time:         t,
 		OriginDesc:   line[22:],
 	}
+	r.mapLocker.Lock()
+	r.playerType[player] = model.Player{
+		Name: player,
+		Time: t,
+	}
+	r.playerType[match[3]] = model.Player{
+		Name: match[3],
+		Time: t,
+	}
+	r.mapLocker.Unlock()
 }
 
 func (r Parser) parseKillA(line string) {
@@ -169,6 +194,7 @@ func (r Parser) parseKillA(line string) {
 	}
 	t, _ := time.ParseInLocation(util.TimeFormat,
 		strings.ReplaceAll(line[0:19], ".", "-"), asiaShanghai)
+	r.mapLocker.Lock()
 	r.playerType[match[1]] = model.Player{
 		Name: match[1],
 		Type: model.TypeTian,
@@ -179,6 +205,7 @@ func (r Parser) parseKillA(line string) {
 		Type: model.TypeMo,
 		Time: t,
 	}
+	r.mapLocker.Unlock()
 }
 
 func (r Parser) parseKillB(line string) {
@@ -188,11 +215,13 @@ func (r Parser) parseKillB(line string) {
 	}
 	t, _ := time.ParseInLocation(util.TimeFormat,
 		strings.ReplaceAll(line[0:19], ".", "-"), asiaShanghai)
+	r.mapLocker.Lock()
 	r.playerType[match[1]] = model.Player{
 		Name: match[1],
 		Type: model.TypeMo,
 		Time: t,
 	}
+	r.mapLocker.Unlock()
 }
 
 func (r Parser) parseKillC(line string) {
@@ -202,6 +231,7 @@ func (r Parser) parseKillC(line string) {
 	}
 	t, _ := time.ParseInLocation(util.TimeFormat,
 		strings.ReplaceAll(line[0:19], ".", "-"), asiaShanghai)
+	r.mapLocker.Lock()
 	r.playerType[match[2]] = model.Player{
 		Name: match[2],
 		Type: model.TypeTian,
@@ -212,6 +242,7 @@ func (r Parser) parseKillC(line string) {
 		Type: model.TypeMo,
 		Time: t,
 	}
+	r.mapLocker.Unlock()
 }
 
 func (r Parser) saveBatch() {
@@ -231,8 +262,18 @@ func (r Parser) savePlayer() {
 	for {
 		select {
 		case <-t.C:
-			zlog.Logger.Info("begin save player")
-			for _, v := range r.playerType {
+			if len(r.playerType) == 0 {
+				continue
+			}
+			r.mapLocker.Lock()
+			tmpItems := make(map[string]model.Player)
+			for k, v := range r.playerType {
+				tmpItems[k] = v
+			}
+			r.playerType = make(map[string]model.Player)
+			r.mapLocker.Unlock()
+			zlog.Logger.Info(fmt.Sprintf("begin save player: %d", len(tmpItems)))
+			for _, v := range tmpItems {
 				err := v.SaveType()
 				if err != nil {
 					zlog.Logger.Error("save player error: " + err.Error())
