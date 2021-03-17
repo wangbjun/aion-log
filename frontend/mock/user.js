@@ -85,7 +85,7 @@ export default {
     },
   ],
   'POST /api/login/account': async (req, res) => {
-    const { password, userName, type } = req.body;
+    const {password, userName, type} = req.body;
     await waitTime(2000);
 
     if (password === 'ant.design' && userName === 'admin') {

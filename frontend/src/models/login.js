@@ -1,33 +1,28 @@
-import { stringify } from 'querystring';
-import { history } from 'umi';
-import { setAuthority } from '@/utils/authority';
-import { getPageQuery } from '@/utils/utils';
-import { message } from 'antd';
+import {history} from 'umi';
+import {setAuthority} from '@/utils/authority';
+import {getPageQuery} from '@/utils/utils';
+import {message} from 'antd';
+import {login} from "@/services/user";
+
 const Model = {
   namespace: 'login',
-  state: {
-    status: undefined,
-  },
+  state: {status: undefined},
   effects: {
-    *login({ payload }, { call, put }) {
-      const response = yield call(fakeAccountLogin, payload);
+    * login({payload}, {call, put}) {
+      const response = yield call(login, payload);
       yield put({
         type: 'changeLoginStatus',
         payload: response,
       }); // Login successfully
-
-      if (response.status === 'ok') {
+      if (response.code === 200) {
         const urlParams = new URL(window.location.href);
         const params = getPageQuery();
         message.success('🎉 🎉 🎉  登录成功！');
-        let { redirect } = params;
-
+        let {redirect} = params;
         if (redirect) {
           const redirectUrlParams = new URL(redirect);
-
           if (redirectUrlParams.origin === urlParams.origin) {
             redirect = redirect.substr(urlParams.origin.length);
-
             if (redirect.match(/^\/.*#/)) {
               redirect = redirect.substr(redirect.indexOf('#') + 1);
             }
@@ -36,28 +31,20 @@ const Model = {
             return;
           }
         }
-
-        history.replace(redirect || '/');
+        history.push(redirect || '/');
       }
     },
-
-    logout() {
-      const { redirect } = getPageQuery(); // Note: There may be security issues, please note
-
-      if (window.location.pathname !== '/user/login' && !redirect) {
-        history.replace({
-          pathname: '/user/login',
-          search: stringify({
-            redirect: window.location.href,
-          }),
-        });
-      }
+    * logout() {
+      localStorage.clear()
+      window.location.reload()
     },
   },
   reducers: {
-    changeLoginStatus(state, { payload }) {
-      setAuthority(payload.currentAuthority);
-      return { ...state, status: payload.status, type: payload.type };
+    changeLoginStatus(state, {payload}) {
+      let data = payload && payload.data
+      setAuthority(data && data.currentAuthority);
+      localStorage.setItem("token", data && data.token)
+      return {...state, status: payload.msg};
     },
   },
 };

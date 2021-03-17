@@ -31,7 +31,8 @@ export async function queryPlayer(params) {
 export async function changePlayerType(params) {
   return request('/api/v1/changeType', {
     params,
-    method: "GET"
+    method: "GET",
+    headers: {'Authorization': localStorage.getItem("token")}
   });
 }
 
@@ -41,13 +42,3 @@ export async function getTask(params) {
     method: "GET"
   });
 }
-
-export async function addTask(params) {
-  return request('/api/v1/addTask', {
-    method: "POST",
-    data: {
-      ...params
-    }
-  });
-}
-

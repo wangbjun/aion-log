@@ -1,4 +1,4 @@
-import {addTask, changePlayerType, getTask, queryLogList, queryPlayer, queryRankList, queryStat} from "@/services/api";
+import {changePlayerType, getTask, queryLogList, queryPlayer, queryRankList, queryStat} from "@/services/api";
 import moment from "moment";
 
 const GlobalModel = {
@@ -75,7 +75,7 @@ const GlobalModel = {
       });
     },
     * changePlayerType({payload}, {call, put, select}) {
-      yield call(changePlayerType, payload);
+      return yield call(changePlayerType, payload);
     },
     * getTask({payload}, {call, put, select}) {
       const result = yield call(getTask, payload);
@@ -85,9 +85,6 @@ const GlobalModel = {
           taskStatus: result.data,
         },
       });
-    },
-    * addTask({payload}, {call, put, select}) {
-      return yield call(addTask, payload);
     },
   },
   reducers: {

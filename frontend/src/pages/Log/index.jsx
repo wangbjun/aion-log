@@ -119,7 +119,7 @@ class Log extends React.Component {
   async searchTime(row) {
     await this.formRef.current.setFieldsValue({time: [moment(row.time), moment(row.time)], player: row.player})
     await this.setState({page: 1})
-    this.props.history.push("/log?player="+row.player)
+    this.props.history.push("/log?player=" + row.player)
     this.query().then()
   }
 

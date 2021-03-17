@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { parse } from 'url';
+import {parse} from 'url';
 
 // mock tableListDataSource
 const genList = (current, pageSize) => {
@@ -39,7 +39,7 @@ function getRule(req, res, u) {
     realUrl = req.url;
   }
 
-  const { current = 1, pageSize = 10 } = req.query;
+  const {current = 1, pageSize = 10} = req.query;
   const params = parse(realUrl, true).query;
   let dataSource = [...tableListDataSource].slice((current - 1) * pageSize, current * pageSize);
   const sorter = JSON.parse(params.sorter);
@@ -110,7 +110,7 @@ function postRule(req, res, u, b) {
   }
 
   const body = (b && b.body) || req.body;
-  const { method, name, desc, key } = body;
+  const {method, name, desc, key} = body;
 
   switch (method) {
     /* eslint no-case-declarations:0 */
@@ -148,8 +148,8 @@ function postRule(req, res, u, b) {
         let newRule = {};
         tableListDataSource = tableListDataSource.map((item) => {
           if (item.key === key) {
-            newRule = { ...item, desc, name };
-            return { ...item, desc, name };
+            newRule = {...item, desc, name};
+            return {...item, desc, name};
           }
 
           return item;

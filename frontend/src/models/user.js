@@ -1,11 +1,12 @@
-import { queryCurrent, query as queryUsers } from '@/services/user';
+import {query as queryUsers, queryCurrent} from '@/services/user';
+
 const UserModel = {
   namespace: 'user',
   state: {
     currentUser: {},
   },
   effects: {
-    *fetch(_, { call, put }) {
+    * fetch(_, {call, put}) {
       const response = yield call(queryUsers);
       yield put({
         type: 'save',
@@ -13,7 +14,7 @@ const UserModel = {
       });
     },
 
-    *fetchCurrent(_, { call, put }) {
+    * fetchCurrent(_, {call, put}) {
       const response = yield call(queryCurrent);
       yield put({
         type: 'saveCurrentUser',
@@ -23,7 +24,7 @@ const UserModel = {
   },
   reducers: {
     saveCurrentUser(state, action) {
-      return { ...state, currentUser: action.payload.data || {} };
+      return {...state, currentUser: action.payload.data || {}};
     },
   },
 };

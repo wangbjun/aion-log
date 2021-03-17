@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"aion/model"
 	"aion/service"
 	"aion/zlog"
 	"github.com/asaskevich/govalidator"
@@ -49,29 +50,38 @@ func (uc userController) Register(ctx *gin.Context) {
 	return
 }
 
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 // 用户登录
 func (uc userController) Login(ctx *gin.Context) {
-	email := ctx.PostForm("email")
-	if !govalidator.IsEmail(email) {
+	var request LoginRequest
+	err := ctx.ShouldBindJSON(&request)
+	if err != nil {
+		uc.Failed(ctx, ParamError, err.Error())
+		return
+	}
+	if !govalidator.IsEmail(request.Email) {
 		uc.Failed(ctx, ParamError, "邮箱不正确")
 		return
 	}
-	password := ctx.PostForm("password")
-	if !govalidator.StringLength(password, "6", "16") {
+	if !govalidator.StringLength(request.Password, "6", "16") {
 		uc.Failed(ctx, ParamError, "密码长度不正确6-16")
 		return
 	}
-	token, err := uc.userService.Login(email, password)
+	token, err := uc.userService.Login(request.Email, request.Password)
 	if err != nil {
-		zlog.WithContext(ctx).Sugar().Errorf("uc register Failed, error: %s", err.Error())
+		zlog.WithContext(ctx).Sugar().Errorf("register failed, error: %s", err.Error())
 		if _, ok := err.(service.Error); ok {
 			uc.Failed(ctx, Failed, err.Error())
 		} else {
 			uc.Failed(ctx, Failed, "登录失败")
 		}
 	} else {
-		zlog.WithContext(ctx).Sugar().Infof("login uc Success, email: %s", email)
-		uc.Success(ctx, "ok", gin.H{"token": token})
+		zlog.WithContext(ctx).Sugar().Infof("login success, email: %s", request.Email)
+		uc.Success(ctx, "ok", gin.H{"token": "Bearer " + token, "currentAuthority": "admin"})
 	}
 	return
 }
@@ -87,7 +97,8 @@ func (uc userController) Current(ctx *gin.Context) {
 	if err != nil {
 		uc.Success(ctx, "ok", gin.H{"name": "游客"})
 	} else {
-		uc.Success(ctx, "ok", gin.H{"name": userId})
+		user, _ := model.User{}.GetUser(int(userId))
+		uc.Success(ctx, "ok", gin.H{"name": user.Name})
 	}
 	return
 }

@@ -40,12 +40,6 @@ export default [
                 icon: 'UploadOutlined',
                 path: '/parse',
                 component: './Parse',
-              },
-              {
-                path: '/admin',
-                name: 'admin',
-                icon: 'crown',
-                component: './Admin',
                 authority: ['admin'],
               },
               {

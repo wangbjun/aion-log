@@ -21,3 +21,12 @@ func (u User) IsEmailExisted(email string) (bool, error) {
 	}
 	return true, nil
 }
+
+func (u User) GetUser(id int) (User, error) {
+	var user User
+	err := DB().Find(&user, "id = ?", id).Error
+	if err != nil {
+		return user, err
+	}
+	return user, nil
+}

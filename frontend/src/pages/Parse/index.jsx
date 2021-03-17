@@ -24,7 +24,6 @@ class Parse extends React.Component {
         message.error("失败，请重试：" + resp.msg).then();
       } else {
         message.success("成功，开始解析日志！").then();
-        window.location.reload()
       }
     }
   };
@@ -69,6 +68,7 @@ class Parse extends React.Component {
       beforeUpload: this.beforeUpload,
       multiple: false,
       maxCount: 1,
+      headers: {'Authorization': localStorage.getItem("token")}
     }
     return (
       <PageContainer>

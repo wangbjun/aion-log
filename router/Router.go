@@ -7,6 +7,8 @@ import (
 )
 
 func Route(Router *gin.Engine) {
+	Router.Use(middleware.Request())
+
 	Router.GET("/", BaseController.Index)
 
 	api := Router.Group("/api")
@@ -17,9 +19,9 @@ func Route(Router *gin.Engine) {
 				GET("/ranks", BattleController.GetRank).
 				GET("/stats", BattleController.GetStat).
 				GET("/players", BattleController.GetPlayers).
-				GET("/changeType", BattleController.ChangePlayerType).
+				GET("/changeType", middleware.Auth(), BattleController.ChangePlayerType).
 				GET("/getTask", BattleController.GetTask).
-				POST("/addTask", BattleController.AddTask)
+				POST("/addTask", middleware.Auth(), BattleController.AddTask)
 
 			v1.Group("/user").
 				POST("/register", UserController.Register). //用户注册

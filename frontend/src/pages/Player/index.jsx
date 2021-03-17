@@ -1,4 +1,4 @@
-import {Button, Card, Col, DatePicker, Form, Input, Row, Select, Statistic, Table, Tag} from 'antd';
+import {Button, Card, Col, DatePicker, Form, Input, message, Row, Select, Statistic, Table, Tag} from 'antd';
 import React from 'react';
 import {PageContainer} from '@ant-design/pro-layout';
 import {connect} from "@/.umi/plugin-dva/exports";
@@ -16,10 +16,6 @@ const {Option} = Select
 )
 class Player extends React.Component {
   formRef = React.createRef();
-
-  renderName = (value) => {
-    return <Link to={`/log?player=${value}`}>{value}</Link>
-  }
 
   constructor(props) {
     super(props);
@@ -89,6 +85,10 @@ class Player extends React.Component {
     ];
   }
 
+  renderName = (value) => {
+    return <Link to={`/log?player=${value}`}>{value}</Link>
+  }
+
   renderOption = (value, row) => {
     return (<div>
       <a onClick={() => this.changeType(row, 1)}><Tag color="green">设为天族</Tag></a>
@@ -99,14 +99,19 @@ class Player extends React.Component {
 
   async changeType(row, type) {
     const {dispatch} = this.props
-    await dispatch({
+    const result = await dispatch({
       type: 'global/changePlayerType',
       payload: {
         id: row.id,
         type: type
       }
     });
-    this.query()
+    if (result.code === 200) {
+      message.success("操作成功")
+      this.query()
+    } else if (result.code === 405) {
+      message.error("操作未授权")
+    }
   }
 
   componentDidMount() {
@@ -121,7 +126,7 @@ class Player extends React.Component {
     dispatch({
       type: 'global/fetchPlayerList',
       payload: {
-        st,et,
+        st, et,
         name: fieldValue.name,
         type: fieldValue.type
       }

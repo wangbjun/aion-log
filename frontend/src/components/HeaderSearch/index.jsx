@@ -1,7 +1,7 @@
-import { SearchOutlined } from '@ant-design/icons';
-import { AutoComplete, Input } from 'antd';
+import {SearchOutlined} from '@ant-design/icons';
+import {AutoComplete, Input} from 'antd';
 import useMergedState from 'rc-util/es/hooks/useMergedState';
-import React, { useRef } from 'react';
+import React, {useRef} from 'react';
 import classNames from 'classnames';
 import styles from './index.less';
 
@@ -37,7 +37,7 @@ const HeaderSearch = (props) => {
           inputRef.current.focus();
         }
       }}
-      onTransitionEnd={({ propertyName }) => {
+      onTransitionEnd={({propertyName}) => {
         if (propertyName === 'width' && !searchMode) {
           if (onVisibleChange) {
             onVisibleChange(searchMode);
