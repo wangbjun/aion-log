@@ -4,6 +4,7 @@ import (
 	"aion/config"
 	"aion/model"
 	"aion/router"
+	"aion/service"
 	"aion/zlog"
 	"flag"
 	"github.com/gin-gonic/gin"
@@ -18,6 +19,8 @@ func main() {
 	config.Init(envFile)
 	zlog.Init()
 	model.Init()
+
+	go startDaemon()
 
 	gin.SetMode(getMode())
 	engine := gin.New()
@@ -38,4 +41,8 @@ func getMode() string {
 		return gin.DebugMode
 	}
 	return gin.ReleaseMode
+}
+
+func startDaemon() {
+	service.Ranking{}.Start()
 }

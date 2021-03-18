@@ -55,7 +55,7 @@ func (r battleController) GetAll(ctx *gin.Context) {
 		return
 	}
 	playerMap := make(map[string]int)
-	players, err := model.Player{}.GetPlayers()
+	players, err := model.Player{}.GetAll()
 	if err != nil {
 		r.Failed(ctx, Failed, err.Error())
 		return
@@ -74,41 +74,18 @@ func (r battleController) GetAll(ctx *gin.Context) {
 	r.Success(ctx, "ok", map[string]interface{}{"list": results, "total": count})
 }
 
-type RankResult struct {
-	Player string `json:"player"`
-	Type   int    `json:"type"`
-	Count  int    `json:"count"`
-	Times  string `json:"times"`
-}
-
 func (r battleController) GetRank(ctx *gin.Context) {
 	var (
-		st, _    = ctx.GetQuery("st")
-		et, _    = ctx.GetQuery("et")
-		level, _ = ctx.GetQuery("level")
+		st, _ = ctx.GetQuery("st")
+		et, _ = ctx.GetQuery("et")
 	)
-	if level == "" {
-		level = "4"
-	}
-	data, err := model.BattleLog{}.GetRank(st, et, level)
+	data, err := model.Rank{}.GetAll(st, et)
 	if err != nil {
 		r.Failed(ctx, Failed, err.Error())
 		return
 	}
-	var (
-		countMap  = make(map[string]int)
-		timeMap   = make(map[string]string)
-		playerMap = make(map[string]int)
-	)
-	for _, v := range data {
-		countMap[v.Player]++
-		if existed, ok := timeMap[v.Player]; ok {
-			timeMap[v.Player] = existed + "," + v.Time.Format(util.TimeFormat)
-		} else {
-			timeMap[v.Player] = v.Time.Format(util.TimeFormat)
-		}
-	}
-	players, err := model.Player{}.GetPlayers()
+	var playerMap = make(map[string]int)
+	players, err := model.Player{}.GetAll()
 	if err != nil {
 		r.Failed(ctx, Failed, err.Error())
 		return
@@ -116,33 +93,16 @@ func (r battleController) GetRank(ctx *gin.Context) {
 	for _, v := range players {
 		playerMap[v.Name] = v.Type
 	}
-	var result []RankResult
-	for k, v := range countMap {
-		result = append(result, RankResult{
-			Player: k,
-			Count:  v,
-			Times:  timeMap[k],
-			Type:   playerMap[k],
-		})
+	battleLog := model.BattleLog{}
+	for k, v := range data {
+		data[k].Type = playerMap[v.Player]
+		data[k].AllCount = battleLog.GetSkillCount(st, et, v.Player)
 	}
-	r.Success(ctx, "ok", map[string]interface{}{"list": result})
-}
-
-func (r battleController) GetStat(ctx *gin.Context) {
-	var (
-		st, _ = ctx.GetQuery("st")
-		et, _ = ctx.GetQuery("et")
-	)
-	data, err := model.BattleLog{}.GetStat(st, et)
-	if err != nil {
-		r.Failed(ctx, Failed, err.Error())
-		return
-	}
-	r.Success(ctx, "ok", map[string]interface{}{"total": data})
+	r.Success(ctx, "ok", map[string]interface{}{"list": data})
 }
 
 func (r battleController) GetPlayers(ctx *gin.Context) {
-	counts, err := model.Player{}.GetPlayers()
+	counts, err := model.Player{}.GetAll()
 	if err != nil {
 		r.Failed(ctx, Failed, err.Error())
 		return

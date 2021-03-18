@@ -44,7 +44,7 @@ func NewParser() Parser {
 	}
 }
 
-func (r Parser) IsRuning() bool {
+func (r *Parser) IsRuning() bool {
 	return r.isRuning
 }
 
@@ -69,11 +69,11 @@ func (r *Parser) Start() {
 	}
 }
 
-func (r Parser) Add(fileName string) {
+func (r *Parser) Add(fileName string) {
 	r.fileChan <- fileName
 }
 
-func (r Parser) Run(fileName string) error {
+func (r *Parser) Run(fileName string) error {
 	file, err := os.Open(fileName)
 	if err != nil {
 		return err
@@ -105,15 +105,15 @@ func (r Parser) Run(fileName string) error {
 			r.parseKillA(text)
 		} else if regKillB.Match(line) {
 			r.parseKillB(text)
-		} else if regKillB.Match(line) {
+		} else if regKillC.Match(line) {
 			r.parseKillC(text)
 		}
-		time.Sleep(time.Microsecond * 500)
+		time.Sleep(time.Microsecond * 200)
 	}
 	return nil
 }
 
-func (r Parser) parseDamageA(line string) {
+func (r *Parser) parseDamageA(line string) {
 	if strings.Count(line[22:], "给") >= 2 {
 		return
 	}
@@ -150,7 +150,7 @@ func (r Parser) parseDamageA(line string) {
 	r.mapLocker.Unlock()
 }
 
-func (r Parser) parseDamageB(line string) {
+func (r *Parser) parseDamageB(line string) {
 	match := regDamageB.FindStringSubmatch(line[22:])
 	if len(match) != 5 {
 		return
@@ -208,7 +208,7 @@ func (r Parser) parseKillA(line string) {
 	r.mapLocker.Unlock()
 }
 
-func (r Parser) parseKillB(line string) {
+func (r *Parser) parseKillB(line string) {
 	match := regKillB.FindStringSubmatch(line[22:])
 	if len(match) != 2 {
 		return
@@ -224,7 +224,7 @@ func (r Parser) parseKillB(line string) {
 	r.mapLocker.Unlock()
 }
 
-func (r Parser) parseKillC(line string) {
+func (r *Parser) parseKillC(line string) {
 	match := regKillC.FindStringSubmatch(line[22:])
 	if len(match) != 3 {
 		return
@@ -232,20 +232,22 @@ func (r Parser) parseKillC(line string) {
 	t, _ := time.ParseInLocation(util.TimeFormat,
 		strings.ReplaceAll(line[0:19], ".", "-"), asiaShanghai)
 	r.mapLocker.Lock()
+	if match[1] != "" {
+		r.playerType[match[1]] = model.Player{
+			Name: match[1],
+			Type: model.TypeTian,
+			Time: t,
+		}
+	}
 	r.playerType[match[2]] = model.Player{
 		Name: match[2],
-		Type: model.TypeTian,
-		Time: t,
-	}
-	r.playerType[match[1]] = model.Player{
-		Name: match[1],
 		Type: model.TypeMo,
 		Time: t,
 	}
 	r.mapLocker.Unlock()
 }
 
-func (r Parser) saveBatch() {
+func (r *Parser) saveBatch() {
 	var cached []model.Log
 	for {
 		if len(cached) >= 500 {
@@ -257,7 +259,7 @@ func (r Parser) saveBatch() {
 	}
 }
 
-func (r Parser) savePlayer() {
+func (r *Parser) savePlayer() {
 	var t = time.NewTicker(time.Second * 60)
 	for {
 		select {

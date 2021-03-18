@@ -14,13 +14,6 @@ export async function queryRankList(params) {
   });
 }
 
-export async function queryStat(params) {
-  return request('/api/v1/stats', {
-    params,
-    method: "GET"
-  });
-}
-
 export async function queryPlayer(params) {
   return request('/api/v1/players', {
     params,

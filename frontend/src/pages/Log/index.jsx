@@ -142,13 +142,6 @@ class Log extends React.Component {
         sort: fieldValue.sort
       },
     });
-    dispatch({
-      type: 'global/saveDefault',
-      payload: {
-        sTime: '',
-        sPlayer: ''
-      },
-    });
   }
 
   onReset = async () => {

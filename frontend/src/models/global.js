@@ -1,4 +1,4 @@
-import {changePlayerType, getTask, queryLogList, queryPlayer, queryRankList, queryStat} from "@/services/api";
+import {changePlayerType, getTask, queryLogList, queryPlayer, queryRankList} from "@/services/api";
 import moment from "moment";
 
 const GlobalModel = {
@@ -6,7 +6,6 @@ const GlobalModel = {
   state: {
     logList: [],
     rankList: [],
-    stat: {},
     playerList: [],
     taskStatus: {}
   },
@@ -28,19 +27,13 @@ const GlobalModel = {
           return v.player.indexOf(payload.name) !== -1
         })
       }
+      list.forEach(v => {
+        v.rate = v.count / v.all_count
+      })
       yield put({
         type: 'saveDefault',
         payload: {
           rankList: list,
-        },
-      });
-    },
-    * fetchStat({payload}, {call, put, select}) {
-      const result = yield call(queryStat, payload);
-      yield put({
-        type: 'saveDefault',
-        payload: {
-          stat: result.data,
         },
       });
     },

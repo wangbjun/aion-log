@@ -34,6 +34,12 @@ func (r Player) Save() error {
 	return nil
 }
 
+func (r Player) GetAll() ([]Player, error) {
+	var results []Player
+	err := DB().Order("name asc").Find(&results).Error
+	return results, err
+}
+
 func (r Player) SaveType() error {
 	var existed Player
 	err := DB().First(&existed, "name = ?", r.Name).Error
@@ -47,12 +53,6 @@ func (r Player) SaveType() error {
 		return DB().Create(&r).Error
 	}
 	return nil
-}
-
-func (r Player) GetPlayers() ([]Player, error) {
-	var results []Player
-	err := DB().Order("name asc").Find(&results).Error
-	return results, err
 }
 
 func (r Player) ChangeType(id, t string) error {

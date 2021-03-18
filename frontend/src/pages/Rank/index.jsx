@@ -1,22 +1,23 @@
-import {Button, Card, Col, DatePicker, Form, Input, Row, Select, Statistic, Table, Tag} from 'antd';
+import {Button, Card, Col, DatePicker, Form, Input, Row, Select, Modal, Table, Tag} from 'antd';
 import React from 'react';
 import {PageContainer} from '@ant-design/pro-layout';
 import {connect} from "@/.umi/plugin-dva/exports";
 import moment from "moment";
-
 const {RangePicker} = DatePicker
 const {Option} = Select
 
 @connect(
   state => ({
     ...state.global,
-    loading: state.loading.effects["global/fetchRankList"]
+    loading: state.loading.effects["global/fetchRankList"],
+    loadingDetail: state.loading.effects["global/fetchLogList"]
   })
 )
 class Rank extends React.Component {
 
   state = {
-    isShowExpand: {}
+    isShowExpand: {},
+    isModalVisible: false
   }
 
   formRef = React.createRef();
@@ -28,7 +29,7 @@ class Rank extends React.Component {
         title: "玩家",
         dataIndex: 'player',
         key: 'player',
-        width: '30%',
+        width: '20%',
         sorter: function (a, b) {
           return a.player.localeCompare(b.player)
         },
@@ -52,21 +53,104 @@ class Rank extends React.Component {
         title: "上榜次数",
         dataIndex: 'count',
         key: 'count',
-        width: '20%',
+        width: '15%',
         sorter: function (a, b) {
           return a.count - b.count
+        },
+      },
+      {
+        title: "技能占比(%)",
+        dataIndex: 'rate',
+        key: 'rate',
+        width: '15%',
+        sorter: function (a, b) {
+          return a.rate - b.rate
+        },
+        render: function (value) {
+          return (value*100).toFixed(2)
         },
         defaultSortOrder: "descend"
       },
       {
-        title: "上榜时间点",
+        title: "上榜时间点(最近30个)",
         dataIndex: 'times',
         key: 'times',
-        width: '45%',
+        width: '50%',
         sorter: function (a, b) {
           return a.count - b.count
         },
         render: this.renderTimes
+      },
+    ];
+    this.columnsDetail = [
+      {
+        title: "时间",
+        dataIndex: 'time',
+        key: 'time',
+        render: function (value) {
+          return moment(value).format("YYYY-MM-DD HH:mm:ss")
+        }
+      },
+      {
+        title: "玩家",
+        dataIndex: 'player',
+        key: 'player',
+        render: function (value, row) {
+          let color = "grey"
+          let typeName = ""
+          if (row.player_type === 1) {
+            color = "green"
+            typeName = "天族"
+          } else if (row.player_type === 2) {
+            color = "blue"
+            typeName = "魔族"
+          } else if (row.player_type === 0) {
+            color = "orange"
+            typeName = "其它"
+          }
+          return <div><Tag className="custom-tag" color={color}>{typeName}</Tag><span>{value}</span></div>
+        }
+      },
+      {
+        title: "被玩家",
+        dataIndex: 'target_player',
+        key: 'target_player',
+        render: function (value, row) {
+          let color = "grey"
+          let typeName = ""
+          if (row.target_player_type === 1) {
+            color = "green"
+            typeName = "天族"
+          } else if (row.target_player_type === 2) {
+            color = "blue"
+            typeName = "魔族"
+          } else if (row.target_player_type === 0) {
+            color = "orange"
+            typeName = "其它"
+          }
+          return <span><Tag className="custom-tag" color={color}>{typeName}</Tag>{value}</span>
+        }
+      },
+      {
+        title: "伤害",
+        dataIndex: 'damage',
+        key: 'damage'
+      },
+      {
+        title: "原始日志",
+        dataIndex: 'origin_desc',
+        key: 'origin_desc',
+        width: "50%",
+        render: function (value, row) {
+          let results = []
+          const parts = value.split(row.skill);
+          results.push(parts[0])
+          if (row.skill !== "普通攻击") {
+            results.push(<span style={{color: "red", fontWeight: "bold"}} key={1}>{row.skill}</span>)
+          }
+          results.push(parts[1])
+          return <div>{results}</div>;
+        }
       },
     ];
   }
@@ -111,13 +195,15 @@ class Rank extends React.Component {
     }
   }
 
-  async searchRank(record) {
+  searchRank(record) {
     const {dispatch} = this.props
-    await dispatch({
-      type: 'global/saveDefault',
+    this.setState({isModalVisible: true})
+    dispatch({
+      type: 'global/fetchLogList',
       payload: {
-        sTime: record.time,
-        sPlayer: record.player
+        st: record.time,
+        et: record.time,
+        player: record.player
       },
     });
   }
@@ -142,13 +228,6 @@ class Rank extends React.Component {
         et: ds && ds[1] || et,
         level: fieldValue.level ?? "3",
         name: fieldValue.name
-      },
-    });
-    dispatch({
-      type: 'global/fetchStat',
-      payload: {
-        st: ds && ds[0] || st,
-        et: ds && ds[1] || et,
       },
     });
   }
@@ -188,23 +267,6 @@ class Rank extends React.Component {
             onChange={(d, ds) => this.query(d, ds)}
           />
         </Form.Item>
-        <Form.Item label="段位" name="level" style={{marginTop: "5px"}}>
-          <Select
-            allowClear
-            showSearch
-            style={{width: 150}}
-            placeholder="请选择段位"
-            optionFilterProp="children"
-            filterOption={(input, option) =>
-              option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-            }
-            onSelect={() => this.query()}
-          >
-            <Option value="2">倔强青铜</Option>
-            <Option value="3">荣耀黄金</Option>
-            <Option value="4">最强王者</Option>
-          </Select>
-        </Form.Item>
         <Form.Item label="玩家" name="name" style={{marginTop: "5px"}}>
           <Input allowClear placeholder="请输入"/>
         </Form.Item>
@@ -221,39 +283,50 @@ class Rank extends React.Component {
   }
 
   render() {
-    const {rankList, stat, loading} = this.props
+    const {rankList, loading, logList, loadingDetail} = this.props
+    const {isModalVisible} = this.state
     return (
       <PageContainer>
-        <Card title="概况" extra={this.searchForm()}>
-          <Row gutter={24}>
-            <Col span={8}>
-              <Statistic title="玩家总数" value={stat.total}/>
-            </Col>
-            <Col span={8}>
-              <Statistic title="上榜玩家" value={rankList ? rankList.length : 0}/>
-            </Col>
-            <Col span={8}>
-              <Statistic title="上榜玩家占比" value={(rankList ? rankList.length / stat.total * 100 : 0).toFixed(2)}
-                         suffix={"%"}/>
-            </Col>
-          </Row>
+        <Card extra={this.searchForm()} >
+          <Table
+            bordered
+            size="small"
+            columns={this.columns}
+            dataSource={rankList}
+            rowKey={(record) => {
+              return record.time + record.player
+            }}
+            pagination={{
+              defaultPageSize: 10,
+              hideOnSinglePage: true,
+              showTotal: (total) => `共${total}条记录`,
+            }}
+            loading={loading}
+          />
         </Card>
-        <p/>
-        <Table
-          bordered
-          size="small"
-          columns={this.columns}
-          dataSource={rankList}
-          rowKey={(record) => {
-            return record.time + record.player
-          }}
-          pagination={{
-            defaultPageSize: 15,
-            hideOnSinglePage: true,
-            showTotal: (total) => `共${total}条记录`,
-          }}
-          loading={loading}
-        />
+        <Modal
+          title="战斗日志详情"
+          visible={isModalVisible}
+          onCancel={()=>{this.setState({isModalVisible: false})}}
+          width="70%"
+          footer={null}
+        >
+          <Table
+            bordered
+            size="small"
+            columns={this.columnsDetail}
+            dataSource={logList.list}
+            rowKey={(record) => {
+              return record.id
+            }}
+            loading={loadingDetail}
+            pagination={{
+              defaultPageSize: 10,
+              hideOnSinglePage: true,
+              showTotal: (total) => `共${total}条记录`,
+            }}
+          />
+        </Modal>
       </PageContainer>
     );
   }

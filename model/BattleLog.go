@@ -84,38 +84,6 @@ func (r BattleLog) GetAll(st, et string, page, pageSize int, player, skill, sort
 	return results, count, err
 }
 
-func (r BattleLog) GetRank(st, et, level string) ([]BattleLog, error) {
-	var results []BattleLog
-	sql := "SELECT time,player FROM aion_player_battle_log where skill != '普通攻击'"
-	if st != "" {
-		sql += fmt.Sprintf(" and time >= '%s'", st)
-	}
-	if et != "" {
-		sql += fmt.Sprintf(" and time <= '%s'", et)
-	}
-	sql += fmt.Sprintf(" group by time,player having count(distinct(skill)) = %s order by time desc", level)
-	err := DB().Raw(sql).Find(&results).Error
-	return results, err
-}
-
-type CountResult struct {
-	Type  int `gorm:"column:type" json:"type"`
-	Count int
-}
-
-func (r BattleLog) GetStat(st, et string) (int, error) {
-	var result CountResult
-	sql := "SELECT count(distinct(player)) count FROM aion_player_battle_log where 1 = 1"
-	if st != "" {
-		sql += fmt.Sprintf(" and time >= '%s'", st)
-	}
-	if et != "" {
-		sql += fmt.Sprintf(" and time <= '%s'", et)
-	}
-	err := DB().Raw(sql).First(&result).Error
-	return result.Count, err
-}
-
 func (r BattleLog) GetLastTime() time.Time {
 	var result BattleLog
 	err := DB().Order("time desc").Limit(1).First(&result).Error
@@ -123,4 +91,40 @@ func (r BattleLog) GetLastTime() time.Time {
 		return time.Now()
 	}
 	return result.Time
+}
+
+type skillCount struct {
+	Sum int `json:"sum"`
+}
+
+type cachedKey struct {
+	st     string
+	et     string
+	player string
+}
+
+var skillCountCache = make(map[cachedKey]int)
+
+func (r BattleLog) GetSkillCount(st, et, player string) int {
+	key := cachedKey{
+		st:     st,
+		et:     et,
+		player: player,
+	}
+	if existed, ok := skillCountCache[key]; ok {
+		return existed
+	}
+	var result skillCount
+	sql := "select sum(t1.count) sum from (select time,count(DISTINCT(skill)) count from aion_player_battle_log " +
+		"where player = '" + player + "'"
+	if st != "" {
+		sql += " and time >= '" + st + "'"
+	}
+	if et != "" {
+		sql += " and time <= '" + et + "'"
+	}
+	sql += " group by time) t1"
+	DB().Raw(sql).Find(&result)
+	skillCountCache[key] = result.Sum
+	return result.Sum
 }
