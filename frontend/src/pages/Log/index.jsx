@@ -29,6 +29,7 @@ class Log extends React.Component {
         title: "时间",
         dataIndex: 'time',
         key: 'time',
+        width: 180,
         render: this.renderTime
       },
       {
@@ -74,13 +75,13 @@ class Log extends React.Component {
       {
         title: "伤害",
         dataIndex: 'damage',
-        key: 'damage'
+        key: 'damage',
+        width: 50,
       },
       {
         title: "原始日志",
         dataIndex: 'origin_desc',
         key: 'origin_desc',
-        width: "50%",
         render: function (value, row) {
           let results = []
           const parts = value.split(row.skill);
@@ -174,8 +175,8 @@ class Log extends React.Component {
             ranges={{
               今天: [moment().startOf('day'), moment().endOf('day')],
               昨天: [moment().subtract(1, 'day').startOf('day'), moment().subtract(1, 'day').endOf('day')],
-              最近三天: [moment().subtract(2, 'day').startOf('day'), moment().endOf('day')],
-              最近一周: [moment().subtract(6, 'day').startOf('day'), moment().endOf('day')],
+              最近7天: [moment().subtract(6, 'day').startOf('day'), moment().endOf('day')],
+              最近14天: [moment().subtract(13, 'day').startOf('day'), moment().endOf('day')],
             }}
             allowClear
             showTime={{defaultValue: moment('00:00:00', 'HH:mm:ss')}}

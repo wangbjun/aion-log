@@ -44,5 +44,5 @@ func getMode() string {
 }
 
 func startDaemon() {
-	service.Ranking{}.Start()
+	service.RankService{}.Start()
 }

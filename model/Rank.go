@@ -22,23 +22,24 @@ func (r Rank) Save() error {
 }
 
 type RankResult struct {
-	Player   string `json:"player"`
-	Type     int    `json:"type"`
-	Count    int    `json:"count"`
-	AllCount int    `json:"all_count"`
-	Times    string `json:"times"`
+	Player    string `json:"player"`
+	Type      int    `json:"type"`
+	Counts    int    `json:"counts"`
+	AllCounts int    `json:"all_counts"`
+	Times     string `json:"times"`
 }
 
-func (r Rank) GetAll(st, et string) ([]RankResult, error) {
+func (r Rank) GetAll(st, et, level string) ([]RankResult, error) {
 	var results []RankResult
-	sql := "select player,SUBSTRING_INDEX(GROUP_CONCAT(time ORDER BY time desc),',',30) times, count(1) count from aion_player_rank where 1=1"
+	sql := "select player,SUBSTRING_INDEX(GROUP_CONCAT(time ORDER BY time desc),',',30) times, count(1) counts " +
+		"from aion_player_rank where count = " + level
 	if st != "" {
 		sql += fmt.Sprintf(" and time >= '%s'", st)
 	}
 	if et != "" {
 		sql += fmt.Sprintf(" and time <= '%s'", et)
 	}
-	sql += " group by player HAVING count >= 5"
+	sql += " group by player HAVING counts >= 3"
 	err := DB().Raw(sql).Find(&results).Error
 	return results, err
 }
@@ -54,10 +55,10 @@ func (r Rank) GetLastTime() *time.Time {
 }
 
 func (r Rank) GetRanks() ([]Rank, error) {
-	sql := "select player,count(DISTINCT(skill)) count,time from aion_player_battle_log where skill != '普通攻击'"
+	sql := "select player,count(DISTINCT(skill)) count,time from aion_player_battle_log"
 	lastTime := Rank{}.GetLastTime()
 	if lastTime != nil {
-		sql += " and time > '" + lastTime.Format(util.TimeFormat) + "'"
+		sql += " where time > '" + lastTime.Format(util.TimeFormat) + "'"
 	}
 	sql += " group by player,time HAVING count(DISTINCT(skill)) >= 3"
 

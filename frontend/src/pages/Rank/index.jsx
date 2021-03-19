@@ -3,6 +3,7 @@ import React from 'react';
 import {PageContainer} from '@ant-design/pro-layout';
 import {connect} from "@/.umi/plugin-dva/exports";
 import moment from "moment";
+import {Link} from "umi";
 const {RangePicker} = DatePicker
 const {Option} = Select
 
@@ -17,7 +18,12 @@ class Rank extends React.Component {
 
   state = {
     isShowExpand: {},
-    isModalVisible: false
+    isModalVisible: false,
+    searchPlayer: ''
+  }
+
+  renderName = (value) => {
+    return <Link to={`/log?player=${value}`}>{value}</Link>
   }
 
   formRef = React.createRef();
@@ -29,47 +35,52 @@ class Rank extends React.Component {
         title: "玩家",
         dataIndex: 'player',
         key: 'player',
-        width: '20%',
         sorter: function (a, b) {
           return a.player.localeCompare(b.player)
         },
-        render: function (value, row) {
-          let color = "grey"
-          let typeName = ""
-          if (row.type === 1) {
-            color = "green"
-            typeName = "天族"
-          } else if (row.type === 2) {
-            color = "blue"
-            typeName = "魔族"
-          } else if (row.type === 0) {
-            color = "orange"
-            typeName = "其它"
+        render: this.renderName
+      },
+      {
+        title: "种族",
+        dataIndex: 'type',
+        key: 'type',
+        width: '10%',
+        sorter: function (a, b) {
+          return a.type - b.type
+        },
+        render: function (value) {
+          if (value === 0) {
+            return <Tag color="orange">其它</Tag>
           }
-          return <span><Tag className="custom-tag" color={color}>{typeName}</Tag>{value}</span>
+          if (value === 1) {
+            return <Tag color="green">天族</Tag>
+          }
+          if (value === 2) {
+            return <Tag color="blue">魔族</Tag>
+          }
         }
       },
       {
-        title: "上榜次数",
-        dataIndex: 'count',
-        key: 'count',
-        width: '15%',
-        sorter: function (a, b) {
-          return a.count - b.count
-        },
-      },
-      {
-        title: "技能占比(%)",
+        title: "技能占比",
         dataIndex: 'rate',
         key: 'rate',
-        width: '15%',
+        width: '10%',
         sorter: function (a, b) {
           return a.rate - b.rate
         },
         render: function (value) {
-          return (value*100).toFixed(2)
+          return (value*100).toFixed(1) + "%"
         },
         defaultSortOrder: "descend"
+      },
+      {
+        title: "上榜次数",
+        dataIndex: 'counts',
+        key: 'counts',
+        width: '10%',
+        sorter: function (a, b) {
+          return a.counts - b.counts
+        },
       },
       {
         title: "上榜时间点(最近30个)",
@@ -87,6 +98,7 @@ class Rank extends React.Component {
         title: "时间",
         dataIndex: 'time',
         key: 'time',
+        width: 180,
         render: function (value) {
           return moment(value).format("YYYY-MM-DD HH:mm:ss")
         }
@@ -134,13 +146,13 @@ class Rank extends React.Component {
       {
         title: "伤害",
         dataIndex: 'damage',
-        key: 'damage'
+        key: 'damage',
+        width: 50
       },
       {
         title: "原始日志",
         dataIndex: 'origin_desc',
         key: 'origin_desc',
-        width: "50%",
         render: function (value, row) {
           let results = []
           const parts = value.split(row.skill);
@@ -166,8 +178,8 @@ class Rank extends React.Component {
   renderTimes = (value, row) => {
     const {isShowExpand} = this.state;
     let times = value.split(',')
-    if (times.length > 10 && !isShowExpand[row.player]) {
-      times = times.slice(0, 10)
+    if (times.length > 9 && !isShowExpand[row.player]) {
+      times = times.slice(0, 9)
       return (
         <div>
           <div>
@@ -197,7 +209,7 @@ class Rank extends React.Component {
 
   searchRank(record) {
     const {dispatch} = this.props
-    this.setState({isModalVisible: true})
+    this.setState({isModalVisible: true, searchPlayer: record.player})
     dispatch({
       type: 'global/fetchLogList',
       payload: {
@@ -209,10 +221,7 @@ class Rank extends React.Component {
   }
 
   componentDidMount() {
-    this.formRef.current.setFieldsValue({
-      time: [moment().subtract(6, 'day').startOf('day'), moment().endOf('day')]
-    })
-    this.formRef.current.setFieldsValue({level: "3"})
+    this.formRef.current.setFieldsValue({level: "4"})
     this.query()
   }
 
@@ -226,7 +235,7 @@ class Rank extends React.Component {
       payload: {
         st: ds && ds[0] || st,
         et: ds && ds[1] || et,
-        level: fieldValue.level ?? "3",
+        level: fieldValue.level ?? "4",
         name: fieldValue.name
       },
     });
@@ -234,10 +243,7 @@ class Rank extends React.Component {
 
   onReset = () => {
     this.formRef.current.resetFields();
-    this.formRef.current.setFieldsValue({
-      time: [moment().subtract(6, 'day').startOf('day'), moment().endOf('day')]
-    })
-    this.formRef.current.setFieldsValue({level: "3"})
+    this.formRef.current.setFieldsValue({level: "4"})
     this.query()
   };
 
@@ -259,13 +265,30 @@ class Rank extends React.Component {
             ranges={{
               今天: [moment().startOf('day'), moment().endOf('day')],
               昨天: [moment().subtract(1, 'day').startOf('day'), moment().subtract(1, 'day').endOf('day')],
-              最近3天: [moment().subtract(2, 'day').startOf('day'), moment().endOf('day')],
               最近7天: [moment().subtract(6, 'day').startOf('day'), moment().endOf('day')],
+              最近14天: [moment().subtract(13, 'day').startOf('day'), moment().endOf('day')],
             }}
             allowClear
             showTime={{defaultValue: moment('00:00:00', 'HH:mm:ss')}}
             onChange={(d, ds) => this.query(d, ds)}
           />
+        </Form.Item>
+        <Form.Item label="段位" name="level" style={{marginTop: "5px"}}>
+          <Select
+            allowClear
+            showSearch
+            style={{width: 150}}
+            placeholder="请选择段位"
+            optionFilterProp="children"
+            filterOption={(input, option) =>
+              option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+            }
+            onSelect={() => this.query()}
+          >
+            <Option value="3">至尊星耀</Option>
+            <Option value="4">最强王者</Option>
+            <Option value="5">荣耀王者</Option>
+          </Select>
         </Form.Item>
         <Form.Item label="玩家" name="name" style={{marginTop: "5px"}}>
           <Input allowClear placeholder="请输入"/>
@@ -284,7 +307,10 @@ class Rank extends React.Component {
 
   render() {
     const {rankList, loading, logList, loadingDetail} = this.props
-    const {isModalVisible} = this.state
+    const {isModalVisible,searchPlayer} = this.state
+    const listData = logList.list && logList.list.filter(v => {
+      return v.player === searchPlayer
+    })
     return (
       <PageContainer>
         <Card extra={this.searchForm()} >
@@ -297,7 +323,7 @@ class Rank extends React.Component {
               return record.time + record.player
             }}
             pagination={{
-              defaultPageSize: 10,
+              defaultPageSize: 15,
               hideOnSinglePage: true,
               showTotal: (total) => `共${total}条记录`,
             }}
@@ -305,7 +331,7 @@ class Rank extends React.Component {
           />
         </Card>
         <Modal
-          title="战斗日志详情"
+          title="日志详情"
           visible={isModalVisible}
           onCancel={()=>{this.setState({isModalVisible: false})}}
           width="70%"
@@ -315,7 +341,7 @@ class Rank extends React.Component {
             bordered
             size="small"
             columns={this.columnsDetail}
-            dataSource={logList.list}
+            dataSource={listData}
             rowKey={(record) => {
               return record.id
             }}

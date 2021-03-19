@@ -76,10 +76,11 @@ func (r battleController) GetAll(ctx *gin.Context) {
 
 func (r battleController) GetRank(ctx *gin.Context) {
 	var (
-		st, _ = ctx.GetQuery("st")
-		et, _ = ctx.GetQuery("et")
+		st, _    = ctx.GetQuery("st")
+		et, _    = ctx.GetQuery("et")
+		level, _ = ctx.GetQuery("level")
 	)
-	data, err := model.Rank{}.GetAll(st, et)
+	data, err := model.Rank{}.GetAll(st, et, level)
 	if err != nil {
 		r.Failed(ctx, Failed, err.Error())
 		return
@@ -96,7 +97,7 @@ func (r battleController) GetRank(ctx *gin.Context) {
 	battleLog := model.BattleLog{}
 	for k, v := range data {
 		data[k].Type = playerMap[v.Player]
-		data[k].AllCount = battleLog.GetSkillCount(st, et, v.Player)
+		data[k].AllCounts = battleLog.GetSkillCount(st, et, v.Player)
 	}
 	r.Success(ctx, "ok", map[string]interface{}{"list": data})
 }

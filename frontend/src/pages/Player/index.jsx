@@ -25,7 +25,6 @@ class Player extends React.Component {
         dataIndex: 'name',
         key: 'name',
         defaultSortOrder: 'ascend',
-        width: '20%',
         sorter: function (a, b) {
           return a.name.localeCompare(b.name)
         },
@@ -35,7 +34,6 @@ class Player extends React.Component {
         title: "种族",
         dataIndex: 'type',
         key: 'type',
-        width: '15%',
         sorter: function (a, b) {
           return a.type - b.type
         },
@@ -55,7 +53,6 @@ class Player extends React.Component {
         title: "职业",
         dataIndex: 'job',
         key: 'job',
-        width: '15%',
         sorter: function (a, b) {
           return a.job.localeCompare(b.job)
         },
@@ -67,7 +64,7 @@ class Player extends React.Component {
         title: "最后更新时间",
         dataIndex: 'time',
         key: 'time',
-        width: '20%',
+        width: 180,
         sorter: function (a, b) {
           return moment(a.time).isAfter(moment(b.time))
         },
@@ -156,8 +153,8 @@ class Player extends React.Component {
             ranges={{
               今天: [moment().startOf('day'), moment().endOf('day')],
               昨天: [moment().subtract(1, 'day').startOf('day'), moment().subtract(1, 'day').endOf('day')],
-              最近三天: [moment().subtract(2, 'day').startOf('day'), moment().endOf('day')],
-              最近一周: [moment().subtract(6, 'day').startOf('day'), moment().endOf('day')],
+              最近7天: [moment().subtract(6, 'day').startOf('day'), moment().endOf('day')],
+              最近14天: [moment().subtract(13, 'day').startOf('day'), moment().endOf('day')],
             }}
             allowClear
             showTime={{defaultValue: moment('00:00:00', 'HH:mm:ss')}}

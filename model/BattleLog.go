@@ -3,8 +3,11 @@ package model
 import (
 	"aion/util"
 	"fmt"
+	"github.com/patrickmn/go-cache"
 	"time"
 )
+
+var cachedData = cache.New(30*time.Minute, 10*time.Minute)
 
 type Log struct {
 	Player       string    `gorm:"player" json:"player"`
@@ -93,38 +96,24 @@ func (r BattleLog) GetLastTime() time.Time {
 	return result.Time
 }
 
-type skillCount struct {
-	Sum int `json:"sum"`
+type Count struct {
+	Count int
 }
-
-type cachedKey struct {
-	st     string
-	et     string
-	player string
-}
-
-var skillCountCache = make(map[cachedKey]int)
 
 func (r BattleLog) GetSkillCount(st, et, player string) int {
-	key := cachedKey{
-		st:     st,
-		et:     et,
-		player: player,
+	var key = st + et + player
+	if cached, found := cachedData.Get(key); found {
+		return cached.(int)
 	}
-	if existed, ok := skillCountCache[key]; ok {
-		return existed
-	}
-	var result skillCount
-	sql := "select sum(t1.count) sum from (select time,count(DISTINCT(skill)) count from aion_player_battle_log " +
-		"where player = '" + player + "'"
+	var result Count
+	sql := "SELECT count(distinct(time)) count FROM blog.aion_player_battle_log where player = '" + player + "'"
 	if st != "" {
 		sql += " and time >= '" + st + "'"
 	}
 	if et != "" {
 		sql += " and time <= '" + et + "'"
 	}
-	sql += " group by time) t1"
 	DB().Raw(sql).Find(&result)
-	skillCountCache[key] = result.Sum
-	return result.Sum
+	cachedData.Set(key, result.Count, cache.DefaultExpiration)
+	return result.Count
 }

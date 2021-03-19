@@ -28,7 +28,7 @@ const GlobalModel = {
         })
       }
       list.forEach(v => {
-        v.rate = v.count / v.all_count
+        v.rate = v.counts / v.all_counts
       })
       yield put({
         type: 'saveDefault',
