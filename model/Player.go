@@ -59,3 +59,8 @@ func (r Player) ChangeType(id, t string) error {
 	sql := fmt.Sprintf("update %s set type = %s where id = %s", r.TableName(), t, id)
 	return DB().Exec(sql).Error
 }
+
+func (r Player) DeleteByDay(day string) error {
+	sql := "delete from aion_player_info where date_format(time, '%Y-%m-%d') <= '" + day + "'"
+	return DB().Exec(sql).Error
+}

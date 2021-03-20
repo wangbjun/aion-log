@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-var cachedData = cache.New(30*time.Minute, 10*time.Minute)
+var cachedData = cache.New(6*time.Hour, 30*time.Minute)
 
 type Log struct {
 	Player       string    `gorm:"player" json:"player"`
@@ -87,13 +87,13 @@ func (r BattleLog) GetAll(st, et string, page, pageSize int, player, skill, sort
 	return results, count, err
 }
 
-func (r BattleLog) GetLastTime() time.Time {
+func (r BattleLog) GetLastTime() *time.Time {
 	var result BattleLog
 	err := DB().Order("time desc").Limit(1).First(&result).Error
 	if err != nil {
-		return time.Now()
+		return nil
 	}
-	return result.Time
+	return &result.Time
 }
 
 type Count struct {
@@ -106,7 +106,7 @@ func (r BattleLog) GetSkillCount(st, et, player string) int {
 		return cached.(int)
 	}
 	var result Count
-	sql := "SELECT count(distinct(time)) count FROM blog.aion_player_battle_log where player = '" + player + "'"
+	sql := "select count(distinct(time)) count from aion_player_battle_log where player = '" + player + "'"
 	if st != "" {
 		sql += " and time >= '" + st + "'"
 	}
@@ -116,4 +116,20 @@ func (r BattleLog) GetSkillCount(st, et, player string) int {
 	DB().Raw(sql).Find(&result)
 	cachedData.Set(key, result.Count, cache.DefaultExpiration)
 	return result.Count
+}
+
+type weekly struct {
+	Day string `json:"day"`
+}
+
+func (r BattleLog) GetWeekly() []weekly {
+	var results []weekly
+	sql := "SELECT date_format(time, '%Y-%m-%d') day FROM aion_player_battle_log group by day order by day desc"
+	DB().Raw(sql).Find(&results)
+	return results
+}
+
+func (r BattleLog) DeleteByDay(day string) error {
+	sql := "delete from aion_player_battle_log where date_format(time, '%Y-%m-%d') <= '" + day + "'"
+	return DB().Exec(sql).Error
 }

@@ -47,7 +47,7 @@ func (r battleController) GetAll(ctx *gin.Context) {
 	}
 	pageSize, err := strconv.Atoi(queryPageSize)
 	if err != nil || pageSize < 0 || pageSize > 100 {
-		pageSize = 20
+		pageSize = 100
 	}
 	data, count, err := model.BattleLog{}.GetAll(st, et, page, pageSize, queryPlayer, querySkill, sort)
 	if err != nil {
@@ -164,7 +164,7 @@ func (r battleController) AddTask(ctx *gin.Context) {
 		return
 	}
 	lastTime := model.BattleLog{}.GetLastTime()
-	if t.Before(lastTime) {
+	if lastTime != nil && t.Before(*lastTime) {
 		r.Failed(ctx, ParamError, "此日志已经解析过！")
 		return
 	}

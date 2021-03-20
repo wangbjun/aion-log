@@ -70,3 +70,8 @@ func (r Rank) GetRanks() ([]Rank, error) {
 		return results, nil
 	}
 }
+
+func (r Rank) DeleteByDay(day string) error {
+	sql := "delete from aion_player_rank where date_format(time, '%Y-%m-%d') <= '" + day + "'"
+	return DB().Exec(sql).Error
+}
