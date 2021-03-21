@@ -27,18 +27,18 @@ func (r CleanService) run() {
 		}
 	}()
 	days := model.BattleLog{}.GetWeekly()
-	if len(days) <= 7 {
+	if len(days) <= 10 {
 		return
 	}
-	err := model.BattleLog{}.DeleteByDay(days[7].Day)
+	err := model.BattleLog{}.DeleteByDay(days[10].Day)
 	if err != nil {
 		zlog.Logger.Error("delete battle log error")
 	}
-	err = model.Player{}.DeleteByDay(days[7].Day)
+	err = model.Player{}.DeleteByDay(days[10].Day)
 	if err != nil {
 		zlog.Logger.Error("delete player error")
 	}
-	err = model.Rank{}.DeleteByDay(days[7].Day)
+	err = model.Rank{}.DeleteByDay(days[10].Day)
 	if err != nil {
 		zlog.Logger.Error("delete rank error")
 	}

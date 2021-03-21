@@ -39,5 +39,6 @@ func (r ClassfiyService) run() {
 	}()
 	for k, v := range skill2Pro {
 		model.Player{}.UpdateBySkills(k, v)
+		time.Sleep(time.Millisecond * 100)
 	}
 }

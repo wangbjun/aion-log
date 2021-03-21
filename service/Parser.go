@@ -65,6 +65,9 @@ func (r *Parser) Start() {
 			}
 			r.isRuning = false
 			zlog.Logger.Sugar().Infof("结束解析日志文件： %s", fileName)
+			go RankService{}.run()
+			go ClassfiyService{}.run()
+			go CleanService{}.run()
 		}
 	}
 }

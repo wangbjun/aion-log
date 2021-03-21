@@ -188,7 +188,7 @@ class Player extends React.Component {
             allowClear
             showSearch
             style={{width: 150}}
-            placeholder="请选择种族"
+            placeholder="请选择职业"
             optionFilterProp="children"
             filterOption={(input, option) =>
               option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
