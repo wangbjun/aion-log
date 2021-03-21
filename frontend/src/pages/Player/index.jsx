@@ -4,6 +4,7 @@ import {PageContainer} from '@ant-design/pro-layout';
 import {connect} from "@/.umi/plugin-dva/exports";
 import moment from "moment";
 import {Link} from 'umi';
+import {playerPros} from "@/utils/utils";
 
 const {RangePicker} = DatePicker
 const {Option} = Select
@@ -51,13 +52,13 @@ class Player extends React.Component {
       },
       {
         title: "职业",
-        dataIndex: 'job',
-        key: 'job',
+        dataIndex: 'pro',
+        key: 'pro',
         sorter: function (a, b) {
-          return a.job.localeCompare(b.job)
+          return a.pro - b.pro
         },
         render: function (value) {
-          return "待完善"
+          return <img src={require("../../assets/"+playerPros[value].logo)} width={35}/>
         }
       },
       {
@@ -125,7 +126,8 @@ class Player extends React.Component {
       payload: {
         st, et,
         name: fieldValue.name,
-        type: fieldValue.type
+        type: fieldValue.type,
+        pro: fieldValue.pro
       }
     });
   }
@@ -181,6 +183,23 @@ class Player extends React.Component {
             <Option value="0">其它</Option>
           </Select>
         </Form.Item>
+        <Form.Item label="职业" name="pro" style={{marginTop: "5px"}}>
+          <Select
+            allowClear
+            showSearch
+            style={{width: 150}}
+            placeholder="请选择种族"
+            optionFilterProp="children"
+            filterOption={(input, option) =>
+              option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+            }
+            onSelect={() => this.query()}
+          >
+            {playerPros.map((v, k) =>
+              <Option value={k} key={k}>{v.name}</Option>
+            )}
+          </Select>
+        </Form.Item>
         <Form.Item>
           <Button type="primary" htmlType="submit" style={{marginTop: "5px"}}>
             搜索
@@ -220,27 +239,6 @@ class Player extends React.Component {
       <PageContainer>
         <Card extra={this.searchForm()}>
           <Row gutter={12}>
-            <Col span={6}>
-              <Card title="概况">
-                <Row gutter={24}>
-                  <Col span={12}>
-                    <Statistic title="总数" value={playerList.length} style={{padding: "24px"}}
-                               valueStyle={{color: "red"}}/>
-                  </Col>
-                  <Col span={12}>
-                    <Statistic title="天族" value={statData.tian} style={{padding: "24px"}}
-                               valueStyle={{color: "green"}}/>
-                  </Col>
-                  <Col span={12}>
-                    <Statistic title="其它" value={statData.other} style={{padding: "24px"}}
-                               valueStyle={{color: "orange"}}/>
-                  </Col>
-                  <Col span={12}>
-                    <Statistic title="魔族" value={statData.mo} style={{padding: "24px"}} valueStyle={{color: "blue"}}/>
-                  </Col>
-                </Row>
-              </Card>
-            </Col>
             <Col span={18}>
               <Table
                 bordered
@@ -257,6 +255,27 @@ class Player extends React.Component {
                 }}
                 loading={loading}
               />
+            </Col>
+            <Col span={6}>
+              <Card title="概况">
+                <Row gutter={24}>
+                  <Col span={12}>
+                    <Statistic title="天族" value={statData.tian} style={{padding: "24px"}}
+                               valueStyle={{color: "green"}}/>
+                  </Col>
+                  <Col span={12}>
+                    <Statistic title="总数" value={playerList.length} style={{padding: "24px"}}
+                               valueStyle={{color: "red"}}/>
+                  </Col>
+                  <Col span={12}>
+                    <Statistic title="魔族" value={statData.mo} style={{padding: "24px"}} valueStyle={{color: "blue"}}/>
+                  </Col>
+                  <Col span={12}>
+                    <Statistic title="其它" value={statData.other} style={{padding: "24px"}}
+                               valueStyle={{color: "orange"}}/>
+                  </Col>
+                </Row>
+              </Card>
             </Col>
           </Row>
         </Card>

@@ -4,6 +4,7 @@ import moment from "moment";
 const GlobalModel = {
   namespace: 'global',
   state: {
+    visible: true,
     logList: [],
     rankList: [],
     playerList: [],
@@ -25,6 +26,11 @@ const GlobalModel = {
       if (payload.name) {
         list = list.filter(v => {
           return v.player.indexOf(payload.name) !== -1
+        })
+      }
+      if (payload.pro !== undefined) {
+        list = list.filter(v => {
+          return v.pro === parseInt(payload.pro)
         })
       }
       list.forEach(v => {
@@ -60,6 +66,11 @@ const GlobalModel = {
           return v.type === parseInt(payload.type)
         })
       }
+      if (payload.pro !== undefined) {
+        list = list.filter(v => {
+          return v.pro === parseInt(payload.pro)
+        })
+      }
       yield put({
         type: 'saveDefault',
         payload: {
@@ -79,6 +90,15 @@ const GlobalModel = {
         },
       });
     },
+    *closeModal({payload}, {call, put, select}) {
+      yield put({
+        type: 'saveDefault',
+        payload: {
+          visible: false,
+        },
+      });
+      sessionStorage.setItem("modalClose", "true")
+    }
   },
   reducers: {
     saveDefault(state, {payload}) {

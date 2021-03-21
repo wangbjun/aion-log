@@ -10,7 +10,8 @@ import (
 type RankService struct{}
 
 func (r RankService) Start() {
-	var t = time.NewTicker(time.Minute * 10)
+	r.run()
+	var t = time.NewTicker(time.Hour * 6)
 	for {
 		select {
 		case <-t.C:

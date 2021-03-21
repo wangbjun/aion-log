@@ -21,3 +21,15 @@ export const isAntDesignProOrDev = () => {
   return isAntDesignPro();
 };
 export const getPageQuery = () => parse(window.location.href.split('?')[1]);
+
+export const playerPros = [
+  {name: "未知", logo: "unknown.png"},
+  {name: "剑星", logo: "jx.png"},
+  {name: "守护", logo: "sh.png"},
+  {name: "杀星", logo: "sx.png"},
+  {name: "弓星", logo: "gx.png"},
+  {name: "治愈", logo: "zy.png"},
+  {name: "护法", logo: "hf.png"},
+  {name: "精灵", logo: "jl.png"},
+  {name: "魔道", logo: "md.png"},
+]

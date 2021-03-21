@@ -10,7 +10,8 @@ import (
 type CleanService struct{}
 
 func (r CleanService) Start() {
-	var t = time.NewTicker(time.Hour * 1)
+	r.run()
+	var t = time.NewTicker(time.Hour * 12)
 	for {
 		select {
 		case <-t.C:

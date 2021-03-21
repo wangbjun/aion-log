@@ -85,18 +85,19 @@ func (r battleController) GetRank(ctx *gin.Context) {
 		r.Failed(ctx, Failed, err.Error())
 		return
 	}
-	var playerMap = make(map[string]int)
+	var playerMap = make(map[string]model.Player)
 	players, err := model.Player{}.GetAll()
 	if err != nil {
 		r.Failed(ctx, Failed, err.Error())
 		return
 	}
 	for _, v := range players {
-		playerMap[v.Name] = v.Type
+		playerMap[v.Name] = v
 	}
 	battleLog := model.BattleLog{}
 	for k, v := range data {
-		data[k].Type = playerMap[v.Player]
+		data[k].Type = playerMap[v.Player].Type
+		data[k].Pro = playerMap[v.Player].Pro
 		data[k].AllCounts = battleLog.GetSkillCount(st, et, v.Player)
 	}
 	r.Success(ctx, "ok", map[string]interface{}{"list": data})

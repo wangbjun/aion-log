@@ -4,6 +4,7 @@ import {PageContainer} from '@ant-design/pro-layout';
 import {connect} from "@/.umi/plugin-dva/exports";
 import moment from "moment";
 import {Link} from "umi";
+import {playerPros} from "@/utils/utils";
 const {RangePicker} = DatePicker
 const {Option} = Select
 
@@ -44,7 +45,7 @@ class Rank extends React.Component {
         title: "种族",
         dataIndex: 'type',
         key: 'type',
-        width: '10%',
+        width: '8%',
         sorter: function (a, b) {
           return a.type - b.type
         },
@@ -61,10 +62,22 @@ class Rank extends React.Component {
         }
       },
       {
+        title: "职业",
+        dataIndex: 'pro',
+        key: 'pro',
+        width: '8%',
+        sorter: function (a, b) {
+          return a.pro - b.pro
+        },
+        render: function (value) {
+          return <img src={require("../../assets/"+playerPros[value].logo)} width={35}/>
+        }
+      },
+      {
         title: "技能占比",
         dataIndex: 'rate',
         key: 'rate',
-        width: '10%',
+        width: '8%',
         sorter: function (a, b) {
           return a.rate - b.rate
         },
@@ -76,7 +89,7 @@ class Rank extends React.Component {
         title: "上榜次数",
         dataIndex: 'counts',
         key: 'counts',
-        width: '10%',
+        width: '8%',
         sorter: function (a, b) {
           return a.counts - b.counts
         },
@@ -236,7 +249,8 @@ class Rank extends React.Component {
         st: ds && ds[0] || st,
         et: ds && ds[1] || et,
         level: fieldValue.level ?? "4",
-        name: fieldValue.name
+        name: fieldValue.name,
+        pro: fieldValue.pro
       },
     });
   }
@@ -288,6 +302,23 @@ class Rank extends React.Component {
             <Option value="3">至尊星耀</Option>
             <Option value="4">最强王者</Option>
             <Option value="5">荣耀王者</Option>
+          </Select>
+        </Form.Item>
+        <Form.Item label="职业" name="pro" style={{marginTop: "5px"}}>
+          <Select
+            allowClear
+            showSearch
+            style={{width: 150}}
+            placeholder="请选择种族"
+            optionFilterProp="children"
+            filterOption={(input, option) =>
+              option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+            }
+            onSelect={() => this.query()}
+          >
+            {playerPros.map((v, k) =>
+              <Option value={k} key={k}>{v.name}</Option>
+            )}
           </Select>
         </Form.Item>
         <Form.Item label="玩家" name="name" style={{marginTop: "5px"}}>

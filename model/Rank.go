@@ -24,6 +24,7 @@ func (r Rank) Save() error {
 type RankResult struct {
 	Player    string `json:"player"`
 	Type      int    `json:"type"`
+	Pro       int    `json:"pro"`
 	Counts    int    `json:"counts"`
 	AllCounts int    `json:"all_counts"`
 	Times     string `json:"times"`
