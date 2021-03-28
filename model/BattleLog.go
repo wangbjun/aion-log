@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-var cachedData = cache.New(6*time.Hour, 30*time.Minute)
+var CachedData = cache.New(6*time.Hour, 30*time.Minute)
 
 type Log struct {
 	Player       string    `gorm:"player" json:"player"`
@@ -102,7 +102,7 @@ type Count struct {
 
 func (r BattleLog) GetSkillCount(st, et, player string) int {
 	var key = st + et + player
-	if cached, found := cachedData.Get(key); found {
+	if cached, found := CachedData.Get(key); found {
 		return cached.(int)
 	}
 	var result Count
@@ -114,7 +114,7 @@ func (r BattleLog) GetSkillCount(st, et, player string) int {
 		sql += " and time <= '" + et + "'"
 	}
 	DB().Raw(sql).Find(&result)
-	cachedData.Set(key, result.Count, cache.DefaultExpiration)
+	CachedData.Set(key, result.Count, cache.DefaultExpiration)
 	return result.Count
 }
 

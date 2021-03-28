@@ -98,7 +98,7 @@ func (uc userController) Current(ctx *gin.Context) {
 		uc.Success(ctx, "ok", gin.H{"name": "游客"})
 	} else {
 		user, _ := model.User{}.GetUser(int(userId))
-		uc.Success(ctx, "ok", gin.H{"name": user.Name})
+		uc.Success(ctx, "ok", gin.H{"name": user.Name, "currentAuthority": "admin"})
 	}
 	return
 }

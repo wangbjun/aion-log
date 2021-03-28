@@ -304,6 +304,9 @@ class Rank extends React.Component {
             <Option value="5">荣耀王者</Option>
           </Select>
         </Form.Item>
+        <Form.Item label="玩家" name="name" style={{marginTop: "5px"}}>
+          <Input allowClear placeholder="请输入"/>
+        </Form.Item>
         <Form.Item label="职业" name="pro" style={{marginTop: "5px"}}>
           <Select
             allowClear
@@ -320,9 +323,6 @@ class Rank extends React.Component {
               <Option value={k} key={k}>{v.name}</Option>
             )}
           </Select>
-        </Form.Item>
-        <Form.Item label="玩家" name="name" style={{marginTop: "5px"}}>
-          <Input allowClear placeholder="请输入"/>
         </Form.Item>
         <Form.Item>
           <Button type="primary" htmlType="submit" style={{marginTop: "5px"}}>

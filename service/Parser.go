@@ -68,6 +68,7 @@ func (r *Parser) Start() {
 			go RankService{}.run()
 			go ClassfiyService{}.run()
 			go CleanService{}.run()
+			go model.CachedData.Flush()
 		}
 	}
 }
