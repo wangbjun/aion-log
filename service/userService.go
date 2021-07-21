@@ -93,7 +93,7 @@ func (u userService) Login(email string, password string) (string, error) {
 	}
 }
 
-// 解析token
+// ParseToken 解析token
 func (u userService) ParseToken(tokenString string) (uint, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

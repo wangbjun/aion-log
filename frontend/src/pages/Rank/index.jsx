@@ -1,10 +1,11 @@
-import {Button, Card, Col, DatePicker, Form, Input, Row, Select, Modal, Table, Tag} from 'antd';
+import {Button, Card, DatePicker, Form, Input, Modal, Select, Table, Tag} from 'antd';
 import React from 'react';
 import {PageContainer} from '@ant-design/pro-layout';
 import {connect} from "@/.umi/plugin-dva/exports";
 import moment from "moment";
 import {Link} from "umi";
 import {playerPros} from "@/utils/utils";
+
 const {RangePicker} = DatePicker
 const {Option} = Select
 
@@ -22,11 +23,6 @@ class Rank extends React.Component {
     isModalVisible: false,
     searchPlayer: ''
   }
-
-  renderName = (value) => {
-    return <Link to={`/log?player=${value}`}>{value}</Link>
-  }
-
   formRef = React.createRef();
 
   constructor(props) {
@@ -63,14 +59,14 @@ class Rank extends React.Component {
       },
       {
         title: "职业",
-        dataIndex: 'pro',
-        key: 'pro',
+        dataIndex: 'class',
+        key: 'class',
         width: '8%',
         sorter: function (a, b) {
-          return a.pro - b.pro
+          return a.class - b.class
         },
         render: function (value) {
-          return <img src={require("../../assets/"+playerPros[value].logo)} width={35}/>
+          return <img src={require("../../assets/" + playerPros[value].logo)} width={35}/>
         }
       },
       {
@@ -82,7 +78,7 @@ class Rank extends React.Component {
           return a.rate - b.rate
         },
         render: function (value) {
-          return (value*100).toFixed(1) + "%"
+          return (value * 100).toFixed(1) + "%"
         },
       },
       {
@@ -137,19 +133,19 @@ class Rank extends React.Component {
         }
       },
       {
-        title: "被玩家",
-        dataIndex: 'target_player',
-        key: 'target_player',
+        title: "对象",
+        dataIndex: 'target',
+        key: 'target',
         render: function (value, row) {
           let color = "grey"
           let typeName = ""
-          if (row.target_player_type === 1) {
+          if (row.target_type === 1) {
             color = "green"
             typeName = "天族"
-          } else if (row.target_player_type === 2) {
+          } else if (row.target_type === 2) {
             color = "blue"
             typeName = "魔族"
-          } else if (row.target_player_type === 0) {
+          } else if (row.target_type === 0) {
             color = "orange"
             typeName = "其它"
           }
@@ -158,14 +154,14 @@ class Rank extends React.Component {
       },
       {
         title: "伤害",
-        dataIndex: 'damage',
-        key: 'damage',
+        dataIndex: 'value',
+        key: 'value',
         width: 50
       },
       {
         title: "原始日志",
-        dataIndex: 'origin_desc',
-        key: 'origin_desc',
+        dataIndex: 'raw_msg',
+        key: 'raw_msg',
         render: function (value, row) {
           let results = []
           const parts = value.split(row.skill);
@@ -178,6 +174,10 @@ class Rank extends React.Component {
         }
       },
     ];
+  }
+
+  renderName = (value) => {
+    return <Link to={`/log?player=${value}`}>{value}</Link>
   }
 
   handleUp = (player, action) => {
@@ -338,13 +338,13 @@ class Rank extends React.Component {
 
   render() {
     const {rankList, loading, logList, loadingDetail} = this.props
-    const {isModalVisible,searchPlayer} = this.state
+    const {isModalVisible, searchPlayer} = this.state
     const listData = logList.list && logList.list.filter(v => {
       return v.player === searchPlayer
     })
     return (
       <PageContainer>
-        <Card extra={this.searchForm()} >
+        <Card extra={this.searchForm()}>
           <Table
             bordered
             size="small"
@@ -354,7 +354,7 @@ class Rank extends React.Component {
               return record.time + record.player
             }}
             pagination={{
-              defaultPageSize: 15,
+              defaultPageSize: 20,
               hideOnSinglePage: true,
               showTotal: (total) => `共${total}条记录`,
             }}
@@ -364,7 +364,9 @@ class Rank extends React.Component {
         <Modal
           title="日志详情"
           visible={isModalVisible}
-          onCancel={()=>{this.setState({isModalVisible: false})}}
+          onCancel={() => {
+            this.setState({isModalVisible: false})
+          }}
           width="70%"
           footer={null}
         >
@@ -378,7 +380,7 @@ class Rank extends React.Component {
             }}
             loading={loadingDetail}
             pagination={{
-              defaultPageSize: 10,
+              defaultPageSize: 20,
               hideOnSinglePage: true,
               showTotal: (total) => `共${total}条记录`,
             }}

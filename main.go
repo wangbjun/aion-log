@@ -12,11 +12,11 @@ import (
 )
 
 func main() {
-	var c string
-	var envFile = "./app.ini"
-	flag.StringVar(&c, "c", envFile, "custom conf file path")
+	var conf string
+	flag.StringVar(&conf, "c", "./app.ini", "custom conf file path")
 	flag.Parse()
-	config.Init(envFile)
+
+	config.Init(conf)
 	zlog.Init()
 	model.Init()
 
@@ -27,6 +27,7 @@ func main() {
 	engine.Use(gin.Recovery())
 	// 加载路由
 	router.Route(engine)
+
 	// 启动服务器
 	log.Println("server started success")
 	err := engine.Run(":" + config.GetAPP("PORT").String())
@@ -46,5 +47,4 @@ func getMode() string {
 func startDaemon() {
 	go service.RankService{}.Start()
 	go service.ClassfiyService{}.Start()
-	go service.CleanService{}.Start()
 }

@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// 用户鉴权
+// Auth 用户鉴权
 func Auth() gin.HandlerFunc {
 	us := service.NewUser()
 	return func(ctx *gin.Context) {

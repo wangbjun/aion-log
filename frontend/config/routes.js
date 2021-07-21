@@ -21,7 +21,7 @@ export default [
           {
             path: '/',
             component: '../layouts/BasicLayout',
-            authority: ['admin', 'user', 'guest'],
+            authority: ['user', 'guest'],
             routes: [
               {
                 path: '/',
@@ -40,13 +40,6 @@ export default [
                 icon: 'table',
                 path: '/log',
                 component: './Log',
-              },
-              {
-                name: '上传日志',
-                icon: 'UploadOutlined',
-                path: '/parse',
-                component: './Parse',
-                authority: ['admin'],
               },
               {
                 component: './404',

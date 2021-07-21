@@ -1,4 +1,4 @@
-import {changePlayerType, getTask, queryLogList, queryPlayer, queryRankList} from "@/services/api";
+import {queryLogList, queryPlayer, queryRankList} from "@/services/api";
 import moment from "moment";
 
 const GlobalModel = {
@@ -8,6 +8,7 @@ const GlobalModel = {
     logList: [],
     rankList: [],
     playerList: [],
+    stockList: [],
     taskStatus: {}
   },
   effects: {
@@ -78,19 +79,7 @@ const GlobalModel = {
         },
       });
     },
-    * changePlayerType({payload}, {call, put, select}) {
-      return yield call(changePlayerType, payload);
-    },
-    * getTask({payload}, {call, put, select}) {
-      const result = yield call(getTask, payload);
-      yield put({
-        type: 'saveDefault',
-        payload: {
-          taskStatus: result.data,
-        },
-      });
-    },
-    *closeModal({payload}, {call, put, select}) {
+    * closeModal({payload}, {call, put, select}) {
       yield put({
         type: 'saveDefault',
         payload: {

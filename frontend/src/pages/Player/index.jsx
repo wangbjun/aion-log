@@ -52,13 +52,13 @@ class Player extends React.Component {
       },
       {
         title: "职业",
-        dataIndex: 'pro',
-        key: 'pro',
+        dataIndex: 'class',
+        key: 'class',
         sorter: function (a, b) {
-          return a.pro - b.pro
+          return a.class - b.class
         },
         render: function (value) {
-          return <img src={require("../../assets/"+playerPros[value].logo)} width={35}/>
+          return <img src={require("../../assets/" + playerPros[value].logo)} width={30}/>
         }
       },
       {
@@ -73,43 +73,11 @@ class Player extends React.Component {
           return moment(value).format("YYYY-MM-DD HH:mm:ss")
         }
       },
-      {
-        title: "操作",
-        dataIndex: 'option',
-        key: 'option',
-        width: '30%',
-        render: this.renderOption
-      },
     ];
   }
 
   renderName = (value) => {
     return <Link to={`/log?player=${value}`}>{value}</Link>
-  }
-
-  renderOption = (value, row) => {
-    return (<div>
-      <a onClick={() => this.changeType(row, 1)}><Tag color="green">设为天族</Tag></a>
-      <a onClick={() => this.changeType(row, 2)}><Tag color="blue">设为魔族</Tag></a>
-      <a onClick={() => this.changeType(row, 0)}><Tag color="orange">设为其它</Tag></a>
-    </div>)
-  }
-
-  async changeType(row, type) {
-    const {dispatch} = this.props
-    const result = await dispatch({
-      type: 'global/changePlayerType',
-      payload: {
-        id: row.id,
-        type: type
-      }
-    });
-    if (result.code === 200) {
-      message.success("操作成功")
-      this.query()
-    } else if (result.code === 405) {
-      message.error("操作未授权")
-    }
   }
 
   componentDidMount() {
@@ -249,7 +217,7 @@ class Player extends React.Component {
                   return record.name + record.type
                 }}
                 pagination={{
-                  defaultPageSize: 15,
+                  defaultPageSize: 20,
                   hideOnSinglePage: true,
                   showTotal: (total) => `共${total}条记录`,
                 }}

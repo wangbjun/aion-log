@@ -4,6 +4,7 @@ import (
 	"aion/model"
 	"aion/service"
 	"aion/zlog"
+	"errors"
 	"github.com/asaskevich/govalidator"
 	"github.com/gin-gonic/gin"
 	"strings"
@@ -18,7 +19,7 @@ var UserController = &userController{
 	userService: service.NewUser(),
 }
 
-// 用户注册
+// Register 用户注册
 func (uc userController) Register(ctx *gin.Context) {
 	name := ctx.PostForm("name")
 	if !govalidator.StringLength(name, "1", "10") {
@@ -55,7 +56,7 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-// 用户登录
+// Login 用户登录
 func (uc userController) Login(ctx *gin.Context) {
 	var request LoginRequest
 	err := ctx.ShouldBindJSON(&request)
@@ -74,10 +75,8 @@ func (uc userController) Login(ctx *gin.Context) {
 	token, err := uc.userService.Login(request.Email, request.Password)
 	if err != nil {
 		zlog.WithContext(ctx).Sugar().Errorf("register failed, error: %s", err.Error())
-		if _, ok := err.(service.Error); ok {
+		if errors.As(err, &service.Error{}) {
 			uc.Failed(ctx, Failed, err.Error())
-		} else {
-			uc.Failed(ctx, Failed, "登录失败")
 		}
 	} else {
 		zlog.WithContext(ctx).Sugar().Infof("login success, email: %s", request.Email)
@@ -86,7 +85,7 @@ func (uc userController) Login(ctx *gin.Context) {
 	return
 }
 
-// 用户登录
+// Current 用户登录
 func (uc userController) Current(ctx *gin.Context) {
 	token := ctx.GetHeader("Authorization")
 	if token == "" {
@@ -103,7 +102,7 @@ func (uc userController) Current(ctx *gin.Context) {
 	return
 }
 
-// 用户退出
+// Logout 用户退出
 func (uc userController) Logout(ctx *gin.Context) {
 	token := ctx.GetHeader("Authorization")
 

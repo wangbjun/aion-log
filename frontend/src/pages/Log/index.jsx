@@ -19,7 +19,7 @@ class Log extends React.Component {
 
   state = {
     page: 1,
-    pageSize: 15,
+    pageSize: 20,
   }
 
   constructor(props) {
@@ -53,19 +53,19 @@ class Log extends React.Component {
         }
       },
       {
-        title: "被玩家",
-        dataIndex: 'target_player',
-        key: 'target_player',
+        title: "对象",
+        dataIndex: 'target',
+        key: 'target',
         render: function (value, row) {
           let color = "grey"
           let typeName = ""
-          if (row.target_player_type === 1) {
+          if (row.target_type === 1) {
             color = "green"
             typeName = "天族"
-          } else if (row.target_player_type === 2) {
+          } else if (row.target_type === 2) {
             color = "blue"
             typeName = "魔族"
-          } else if (row.target_player_type === 0) {
+          } else if (row.target_type === 0) {
             color = "orange"
             typeName = "其它"
           }
@@ -74,14 +74,14 @@ class Log extends React.Component {
       },
       {
         title: "伤害",
-        dataIndex: 'damage',
-        key: 'damage',
+        dataIndex: 'value',
+        key: 'value',
         width: 50,
       },
       {
         title: "原始日志",
-        dataIndex: 'origin_desc',
-        key: 'origin_desc',
+        dataIndex: 'raw_msg',
+        key: 'raw_msg',
         render: function (value, row) {
           let results = []
           const parts = value.split(row.skill);
@@ -194,10 +194,10 @@ class Log extends React.Component {
             onSelect={() => this.query()}
           >
             <Option value="time">时间</Option>
-            <Option value="damage">伤害</Option>
+            <Option value="value">伤害</Option>
             <Option value="skill">技能</Option>
             <Option value="player">玩家</Option>
-            <Option value="target_player">被玩家</Option>
+            <Option value="target">对象</Option>
           </Select>
         </Form.Item>
         <Form.Item>
@@ -218,7 +218,7 @@ class Log extends React.Component {
     const pagination = {
       current: page,
       pageSize: pageSize,
-      defaultPageSize: 15,
+      defaultPageSize: 20,
       total: logList.total,
       showTotal: (total) => `共${total}条记录`,
       onChange: async (page, pageSize) => {

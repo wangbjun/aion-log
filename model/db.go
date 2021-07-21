@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-var dbConnections = make(map[string]*gorm.DB, 0)
+var dbConnections = make(map[string]*gorm.DB)
 
 func Init() {
 	for k, v := range config.DBConfig {
@@ -25,10 +25,6 @@ func Init() {
 
 func DB() *gorm.DB {
 	return GetDB("default")
-}
-
-func UserDB() *gorm.DB {
-	return GetDB("user")
 }
 
 func GetDB(name string) *gorm.DB {
@@ -51,7 +47,6 @@ func openConnection(conf map[string]string) (*gorm.DB, error) {
 	db.DB().SetMaxOpenConns(open)
 	if config.GetAPP("DEBUG").String() == "true" {
 		db.LogMode(true)
-		db.SetLogger(new(zlog.SqlLog))
 	}
 	return db, nil
 }
