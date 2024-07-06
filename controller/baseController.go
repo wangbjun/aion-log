@@ -4,7 +4,6 @@ import (
 	"aion/zlog"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	"log"
 	"net/http"
 )
 
@@ -23,7 +22,6 @@ var BaseController *Controller
 
 func init() {
 	BaseController = &Controller{}
-	log.Println("init all controller Success")
 }
 
 func (*Controller) Index(ctx *gin.Context) {

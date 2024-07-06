@@ -163,6 +163,9 @@ class Rank extends React.Component {
         dataIndex: 'raw_msg',
         key: 'raw_msg',
         render: function (value, row) {
+          if (!row.skill) {
+            return <div>{value}</div>;
+          }
           let results = []
           const parts = value.split(row.skill);
           results.push(parts[0])
@@ -234,7 +237,7 @@ class Rank extends React.Component {
   }
 
   componentDidMount() {
-    this.formRef.current.setFieldsValue({level: "4"})
+    this.formRef.current.setFieldsValue({level: "3"})
     this.query()
   }
 
@@ -248,7 +251,7 @@ class Rank extends React.Component {
       payload: {
         st: ds && ds[0] || st,
         et: ds && ds[1] || et,
-        level: fieldValue.level ?? "4",
+        level: fieldValue.level ?? "3",
         name: fieldValue.name,
         pro: fieldValue.pro
       },

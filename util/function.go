@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"hash"
 	"io"
+	"unicode"
 )
 
 const TimeFormat = "2006-01-02 15:04:05"
@@ -62,6 +63,23 @@ func GetUuidV4() string {
 		u, err = uuid.NewRandom()
 		if err == nil {
 			return u.String()
+		}
+	}
+	return ""
+}
+func isRomanChar(r rune) bool {
+	switch unicode.ToUpper(r) {
+	case 'I', 'V', 'X', ' ':
+		return true
+	}
+	return false
+}
+
+func RemoveRomanNumber(s string) string {
+	runes := []rune(s)
+	for i := len(runes) - 1; i >= 0; i-- {
+		if !isRomanChar(runes[i]) {
+			return string(runes[:i+1])
 		}
 	}
 	return ""

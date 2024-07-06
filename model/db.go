@@ -2,7 +2,6 @@ package model
 
 import (
 	"aion/config"
-	"aion/zlog"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 	"log"
@@ -18,7 +17,6 @@ func Init() {
 			log.Fatalf("init mysql pool [%s] failed，error： %s\n", k, err.Error())
 		} else {
 			dbConnections[k] = db
-			log.Printf("init mysql pool [%s] success\n", k)
 		}
 	}
 }
@@ -38,7 +36,7 @@ func GetDB(name string) *gorm.DB {
 func openConnection(conf map[string]string) (*gorm.DB, error) {
 	db, err := gorm.Open(conf["dialect"], conf["dsn"])
 	if err != nil {
-		zlog.Logger.Sugar().Errorf("open connection failed,error: %s", err.Error())
+		log.Fatalf("open connection failed,error: %s", err.Error())
 		return nil, err
 	}
 	idle, _ := strconv.Atoi(conf["maxIdleConns"])

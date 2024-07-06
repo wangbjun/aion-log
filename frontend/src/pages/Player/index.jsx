@@ -29,12 +29,14 @@ class Player extends React.Component {
         sorter: function (a, b) {
           return a.name.localeCompare(b.name)
         },
-        render: this.renderName
+        render: this.renderName,
+        width: 300,
       },
       {
         title: "种族",
         dataIndex: 'type',
         key: 'type',
+        width: 100,
         sorter: function (a, b) {
           return a.type - b.type
         },
@@ -54,12 +56,40 @@ class Player extends React.Component {
         title: "职业",
         dataIndex: 'class',
         key: 'class',
+        width: 100,
         sorter: function (a, b) {
           return a.class - b.class
         },
         render: function (value) {
           return <img src={require("../../assets/" + playerPros[value].logo)} width={30}/>
         }
+      },
+      {
+        title: "攻击次数",
+        dataIndex: 'skill_count',
+        key: 'skill_count',
+        width: 100,
+        sorter: function (a, b) {
+          return a.skill_count - b.skill_count
+        },
+      },
+      {
+        title: "击杀数",
+        dataIndex: 'kill_count',
+        key: 'kill_count',
+        width: 100,
+        sorter: function (a, b) {
+          return a.kill_count - b.kill_count
+        },
+      },
+      {
+        title: "死亡数",
+        dataIndex: 'death_count',
+        key: 'death_count',
+        width: 100,
+        sorter: function (a, b) {
+          return a.death_count - b.death_count
+        },
       },
       {
         title: "最后更新时间",
@@ -95,7 +125,7 @@ class Player extends React.Component {
         st, et,
         name: fieldValue.name,
         type: fieldValue.type,
-        pro: fieldValue.pro
+        class: fieldValue.class
       }
     });
   }
@@ -117,7 +147,7 @@ class Player extends React.Component {
         autoComplete="false"
         ref={this.formRef}
       >
-        <Form.Item label="时间" name="time" style={{marginTop: "5px"}}>
+        <Form.Item label="时间" name="time">
           <RangePicker
             format={dateFormat}
             ranges={{
@@ -129,16 +159,17 @@ class Player extends React.Component {
             allowClear
             showTime={{defaultValue: moment('00:00:00', 'HH:mm:ss')}}
             onChange={(d, ds) => this.query(d, ds)}
+            style={{ width: 400 }}
           />
         </Form.Item>
-        <Form.Item label="玩家" name="name" style={{marginTop: "5px"}}>
-          <Input allowClear placeholder="请输入"/>
+        <Form.Item label="玩家" name="name">
+          <Input allowClear placeholder="请输入" style={{ width: 150 }}/>
         </Form.Item>
-        <Form.Item label="种族" name="type" style={{marginTop: "5px"}}>
+        <Form.Item label="种族" name="type" >
           <Select
             allowClear
             showSearch
-            style={{width: 150}}
+            style={{width: 100}}
             placeholder="请选择种族"
             optionFilterProp="children"
             filterOption={(input, option) =>
@@ -151,11 +182,11 @@ class Player extends React.Component {
             <Option value="0">其它</Option>
           </Select>
         </Form.Item>
-        <Form.Item label="职业" name="pro" style={{marginTop: "5px"}}>
+        <Form.Item label="职业" name="class" >
           <Select
             allowClear
             showSearch
-            style={{width: 150}}
+            style={{width: 100}}
             placeholder="请选择职业"
             optionFilterProp="children"
             filterOption={(input, option) =>
@@ -169,11 +200,11 @@ class Player extends React.Component {
           </Select>
         </Form.Item>
         <Form.Item>
-          <Button type="primary" htmlType="submit" style={{marginTop: "5px"}}>
+          <Button type="primary" htmlType="submit">
             搜索
           </Button>
           &nbsp;&nbsp;
-          <Button type="primary" onClick={this.onReset} style={{marginTop: "5px"}}>
+          <Button type="primary" onClick={this.onReset}>
             重置
           </Button>
         </Form.Item>
@@ -200,14 +231,63 @@ class Player extends React.Component {
     return {tian, mo, other}
   }
 
+  getClassData(data) {
+    let class2num = new Map();
+    data.forEach(v => {
+      if (v.type === 0) {
+        return
+      }
+      if (class2num.has(v.class)) {
+        class2num.set(v.class, class2num.get(v.class) + 1);
+      } else {
+        class2num.set(v.class, 1);
+      }
+    });
+    return class2num
+  }
+
   render() {
     const {playerList, loading} = this.props
     const statData = this.getStatData(playerList)
+    const classData = this.getClassData(playerList)
+    console.log(classData)
     return (
       <PageContainer>
         <Card extra={this.searchForm()}>
-          <Row gutter={12}>
-            <Col span={18}>
+          <Row>
+            <Col span={8}>
+              <Card title="种族">
+                <Row gutter={24}>
+                  <Col span={8}>
+                    <Statistic title="总数" value={statData.tian+statData.mo} style={{padding: "24px"}} valueStyle={{color: "red"}}/>
+                  </Col>
+                  <Col span={8}>
+                    <Statistic title="天族" value={statData.tian} style={{padding: "24px"}} valueStyle={{color: "green"}}/>
+                  </Col>
+                  <Col span={8}>
+                    <Statistic title="魔族" value={statData.mo} style={{padding: "24px"}} valueStyle={{color: "blue"}}/>
+                  </Col>
+                </Row>
+              </Card>
+              <Card title="职业">
+                <Row gutter={24}>
+                  {
+                    playerPros.map((v, k) => {
+                      if (k === 0) {
+                        return
+                      }
+                      return  <Col span={6}>
+                        <Statistic title={v.name} value={classData.get(k)} style={{padding: "24px"}} valueStyle={{color: "orange"}}/>
+                      </Col>
+                    })
+                  }
+                  <Col span={6}>
+                    <Statistic title="未知" value={classData.get(0)} style={{padding: "24px"}} valueStyle={{color: "grey"}}/>
+                  </Col>
+                </Row>
+              </Card>
+            </Col>
+            <Col span={16}>
               <Table
                 bordered
                 size="small"
@@ -223,27 +303,6 @@ class Player extends React.Component {
                 }}
                 loading={loading}
               />
-            </Col>
-            <Col span={6}>
-              <Card title="概况">
-                <Row gutter={24}>
-                  <Col span={12}>
-                    <Statistic title="天族" value={statData.tian} style={{padding: "24px"}}
-                               valueStyle={{color: "green"}}/>
-                  </Col>
-                  <Col span={12}>
-                    <Statistic title="总数" value={playerList.length} style={{padding: "24px"}}
-                               valueStyle={{color: "red"}}/>
-                  </Col>
-                  <Col span={12}>
-                    <Statistic title="魔族" value={statData.mo} style={{padding: "24px"}} valueStyle={{color: "blue"}}/>
-                  </Col>
-                  <Col span={12}>
-                    <Statistic title="其它" value={statData.other} style={{padding: "24px"}}
-                               valueStyle={{color: "orange"}}/>
-                  </Col>
-                </Row>
-              </Card>
             </Col>
           </Row>
         </Card>

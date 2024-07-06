@@ -67,9 +67,9 @@ const GlobalModel = {
           return v.type === parseInt(payload.type)
         })
       }
-      if (payload.pro !== undefined) {
+      if (payload.class !== undefined) {
         list = list.filter(v => {
-          return v.pro === parseInt(payload.pro)
+          return v.class === parseInt(payload.class)
         })
       }
       yield put({

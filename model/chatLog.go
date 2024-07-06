@@ -3,48 +3,38 @@ package model
 import (
 	"fmt"
 	"github.com/patrickmn/go-cache"
+	"strings"
 	"time"
 )
 
 var CachedData = cache.New(6*time.Hour, 30*time.Minute)
 
 type Log struct {
-	Player string `gorm:"player" json:"player"`
-	Skill  string `gorm:"skill" json:"skill"`
-	Target string `gorm:"target" json:"target"`
-	Value  int    `gorm:"value" json:"value"`
-	Time   string `gorm:"time" json:"time"`
-	RawMsg string `gorm:"raw_msg" json:"raw_msg"`
+	Id     int       `gorm:"primaryKey" json:"id"`
+	Player string    `gorm:"player" json:"player"`
+	Skill  string    `gorm:"skill" json:"skill"`
+	Target string    `gorm:"target" json:"target"`
+	Value  int       `gorm:"value" json:"value"`
+	Time   time.Time `gorm:"time" json:"time"`
+	RawMsg string    `gorm:"raw_msg" json:"raw_msg"`
 }
 
-type BattleLog struct {
-	Id int `gorm:"primaryKey" json:"id"`
-	Log
-}
-
-func (r BattleLog) TableName() string {
+func (r Log) TableName() string {
 	return "aion_player_battle_log"
 }
 
-func (r BattleLog) Insert() error {
-	return DB().Create(&r).Error
-}
-
-func (r BattleLog) BatchInsert(items []Log) error {
+func (r Log) BatchInsert(items []Log) error {
 	sql := "INSERT INTO `aion_player_battle_log` (`player`,`skill`,`target`,`value`,`time`,`raw_msg`) VALUES "
-	for k, v := range items {
-		if len(items)-1 == k {
-			sql += fmt.Sprintf("('%s','%s','%s',%d,'%s','%s')", v.Player, v.Skill, v.Target, v.Value, v.Time, v.RawMsg)
-		} else {
-			sql += fmt.Sprintf("('%s','%s','%s',%d,'%s','%s'),", v.Player, v.Skill, v.Target, v.Value, v.Time, v.RawMsg)
-		}
+	for _, v := range items {
+		sql += fmt.Sprintf("('%s','%s','%s',%d,'%s','%s'),", v.Player, v.Skill, v.Target, v.Value, v.Time.Format(time.DateTime), strings.TrimSpace(v.RawMsg))
 	}
+	sql = strings.TrimRight(sql, ",")
 	return DB().Exec(sql).Error
 }
 
-func (r BattleLog) GetAll(st, et string, page, pageSize int, player, skill, sort string) ([]BattleLog, int, error) {
-	var results []BattleLog
-	query := DB().Model(&BattleLog{})
+func (r Log) GetAll(st, et string, page, pageSize int, player, target, skill, sort string) ([]Log, int, error) {
+	var results []Log
+	query := DB().Model(&Log{})
 	if st != "" {
 		query = query.Where("time >= ?", st)
 	}
@@ -52,7 +42,10 @@ func (r BattleLog) GetAll(st, et string, page, pageSize int, player, skill, sort
 		query = query.Where("time <= ?", et)
 	}
 	if player != "" {
-		query = query.Where("player = ? or target = ?", player, player)
+		query = query.Where("player = ?", player)
+	}
+	if target != "" {
+		query = query.Where("target = ?", target)
 	}
 	if skill != "" {
 		query = query.Where("skill = ?", skill)
@@ -73,7 +66,7 @@ type Count struct {
 	Count int
 }
 
-func (r BattleLog) GetSkillCount(st, et, player string) int {
+func (r Log) GetSkillCount(st, et, player string) int {
 	var key = st + et + player
 	if cached, found := CachedData.Get(key); found {
 		return cached.(int)

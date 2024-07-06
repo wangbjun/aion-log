@@ -12,7 +12,7 @@ require (
 	github.com/jinzhu/now v1.1.1 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/smartystreets/goconvey v1.6.4 // indirect
-	github.com/thinkoner/openssl v0.0.0-20191016104818-1df12dff7f46
+	github.com/spf13/cobra v1.8.1
 	go.uber.org/zap v1.13.0
 	golang.org/x/text v0.3.1-0.20180807135948-17ff2d5776d2
 	gopkg.in/ini.v1 v1.51.0

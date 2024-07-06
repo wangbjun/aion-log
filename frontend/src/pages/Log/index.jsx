@@ -4,6 +4,7 @@ import {PageContainer} from '@ant-design/pro-layout';
 import {connect} from "@/.umi/plugin-dva/exports";
 import moment from "moment";
 import {parse} from 'querystring'
+import {playerPros} from "@/utils/utils";
 
 const {RangePicker} = DatePicker
 const {Option} = Select
@@ -49,7 +50,7 @@ class Log extends React.Component {
             color = "orange"
             typeName = "其它"
           }
-          return <div><Tag className="custom-tag" color={color}>{typeName}</Tag><span>{value}</span></div>
+          return <div><Tag className="custom-tag" color={color}>{typeName}</Tag><Tag className="custom-tag">{playerPros[row.player_class].name}</Tag><span>{value}</span></div>
         }
       },
       {
@@ -69,7 +70,7 @@ class Log extends React.Component {
             color = "orange"
             typeName = "其它"
           }
-          return <span><Tag className="custom-tag" color={color}>{typeName}</Tag>{value}</span>
+          return <div><Tag className="custom-tag" color={color}>{typeName}</Tag><Tag className="custom-tag">{playerPros[row.target_class].name}</Tag><span>{value}</span></div>
         }
       },
       {
@@ -83,6 +84,12 @@ class Log extends React.Component {
         dataIndex: 'raw_msg',
         key: 'raw_msg',
         render: function (value, row) {
+          if (value.indexOf("打倒了。") !== -1 || value.indexOf("攻击而终结。") !== -1) {
+            return <div style={{color: "deeppink"}}>{value}</div>;
+          }
+          if (!row.skill) {
+            return <div>{value}</div>;
+          }
           let results = []
           const parts = value.split(row.skill);
           results.push(parts[0])
@@ -126,6 +133,7 @@ class Log extends React.Component {
     let st = fieldValue.time && fieldValue.time[0].format("YYYY-MM-DD HH:mm:ss")
     let et = fieldValue.time && fieldValue.time[1].format("YYYY-MM-DD HH:mm:ss")
     let player = fieldValue.player && fieldValue.player.trim()
+    let target = fieldValue.target && fieldValue.target.trim()
     let skill = fieldValue.skill && fieldValue.skill.trim()
     const {page, pageSize} = this.state
     dispatch({
@@ -135,7 +143,7 @@ class Log extends React.Component {
         pageSize,
         st: ds && ds[0] || st,
         et: ds && ds[1] || et,
-        player, skill,
+        player, target, skill,
         sort: fieldValue.sort
       },
     });
@@ -162,7 +170,7 @@ class Log extends React.Component {
         ref={this.formRef}
         style={{overflow: "right"}}
       >
-        <Form.Item label="时间" name="time" style={{marginTop: "5px"}}>
+        <Form.Item label="时间" name="time">
           <RangePicker
             format={dateFormat}
             ranges={{
@@ -174,15 +182,19 @@ class Log extends React.Component {
             allowClear
             showTime={{defaultValue: moment('00:00:00', 'HH:mm:ss')}}
             onChange={(d, ds) => this.query(d, ds)}
+            style={{ width: 400 }}
           />
         </Form.Item>
-        <Form.Item label="技能" name="skill" style={{marginTop: "5px"}}>
-          <Input allowClear placeholder="请输入"/>
+        <Form.Item label="技能" name="skill">
+          <Input allowClear placeholder="请输入" style={{ width: 150 }} />
         </Form.Item>
-        <Form.Item label="玩家" name="player" style={{marginTop: "5px"}}>
-          <Input allowClear placeholder="请输入"/>
+        <Form.Item label="玩家" name="player">
+          <Input allowClear placeholder="请输入" style={{ width: 150 }}/>
         </Form.Item>
-        <Form.Item label="排序" name="sort" style={{marginTop: "5px"}}>
+        <Form.Item label="对象" name="target">
+          <Input allowClear placeholder="请输入" style={{ width: 150 }}/>
+        </Form.Item>
+        <Form.Item label="排序" name="sort">
           <Select
             allowClear
             showSearch
@@ -192,6 +204,7 @@ class Log extends React.Component {
               option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
             onSelect={() => this.query()}
+            style={{ width: 100 }}
           >
             <Option value="time">时间</Option>
             <Option value="value">伤害</Option>
@@ -201,11 +214,11 @@ class Log extends React.Component {
           </Select>
         </Form.Item>
         <Form.Item>
-          <Button type="primary" htmlType="submit" style={{marginTop: "5px"}}>
+          <Button type="primary" htmlType="submit">
             搜索
           </Button>
           &nbsp;&nbsp;
-          <Button type="primary" onClick={this.onReset} style={{marginTop: "5px"}}>
+          <Button type="primary" onClick={this.onReset}>
             重置
           </Button>
         </Form.Item>
