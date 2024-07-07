@@ -6,7 +6,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"os"
 	"time"
 )
 
@@ -54,11 +53,10 @@ func Init() {
 
 func getContext(ctx *gin.Context) []zap.Field {
 	var (
-		now          = time.Now().Format("2006-01-02 15:04:05.000")
-		processId    = os.Getpid()
+		now          = time.Now().Format(time.DateTime)
 		startTime, _ = ctx.Get("startTime")
 		duration     = float64(time.Now().Sub(startTime.(time.Time)).Nanoseconds()/1e4) / 100.0 //单位毫秒,保留2位小数
-		serviceStart = startTime.(time.Time).Format("2006-01-02 15:04:05.000")
+		serviceStart = startTime.(time.Time).Format(time.DateTime)
 		request      = ctx.Request.RequestURI
 		hostAddress  = ctx.Request.Host
 		clientIp     = ctx.ClientIP()
@@ -70,7 +68,6 @@ func getContext(ctx *gin.Context) []zap.Field {
 		zap.String("traceId", traceId),
 		zap.String("serviceStart", serviceStart),
 		zap.String("serviceEnd", now),
-		zap.Int("processId", processId),
 		zap.String("request", request),
 		zap.String("params", params.Encode()),
 		zap.String("hostAddress", hostAddress),

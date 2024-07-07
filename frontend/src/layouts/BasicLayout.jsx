@@ -54,13 +54,13 @@ const BasicLayout = (props) => {
   } = props;
   visible = sessionStorage.getItem("modalClose") !== "true"
   const menuDataRef = useRef([]);
-  useEffect(() => {
-    if (dispatch) {
-      dispatch({
-        type: 'user/fetchCurrent',
-      });
-    }
-  }, []);
+  // useEffect(() => {
+  //   if (dispatch) {
+  //     dispatch({
+  //       type: 'user/fetchCurrent',
+  //     });
+  //   }
+  // }, []);
   /** Init variables */
   const handleMenuCollapse = (payload) => {
     if (dispatch) {

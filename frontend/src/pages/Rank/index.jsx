@@ -19,7 +19,6 @@ const {Option} = Select
 class Rank extends React.Component {
 
   state = {
-    isShowExpand: {},
     isModalVisible: false,
     searchPlayer: ''
   }
@@ -92,7 +91,7 @@ class Rank extends React.Component {
         defaultSortOrder: "descend"
       },
       {
-        title: "上榜时间点(最近30个)",
+        title: "上榜时间点(最近10个)",
         dataIndex: 'times',
         key: 'times',
         width: '50%',
@@ -183,44 +182,22 @@ class Rank extends React.Component {
     return <Link to={`/log?player=${value}`}>{value}</Link>
   }
 
-  handleUp = (player, action) => {
-    const {isShowExpand} = this.state;
-    isShowExpand[player] = action
-    this.setState({
-      isShowExpand: isShowExpand
-    });
-  }
-
   renderTimes = (value, row) => {
-    const {isShowExpand} = this.state;
     let times = value.split(',')
-    if (times.length > 9 && !isShowExpand[row.player]) {
-      times = times.slice(0, 9)
-      return (
-        <div>
-          <div>
-            {
-              times.map((v) => {
-                return (<Tag color="green" onClick={() => this.searchRank({time: v, player: row.player})} key={v}>
-                  {moment(v).format("YYYY-MM-DD HH:mm:ss")}</Tag>)
-              })
-            }<span onClick={() => this.handleUp(row.player, true)} style={{fontSize: '12px', color: 'orange'}}>展开</span>
-          </div>
-        </div>)
-    } else {
-      return (
-        <div>
-          <div>
-            {
-              times.map((v) => {
-                return (<Tag color="green" onClick={() => this.searchRank({time: v, player: row.player})} key={v}>
-                  {moment(v).format("YYYY-MM-DD HH:mm:ss")}</Tag>)
-              })
-            }{isShowExpand[row.player] &&
-          <span onClick={() => this.handleUp(row.player, false)} style={{fontSize: '12px', color: 'orange'}}>收起</span>}
-          </div>
-        </div>)
+    if (times.length > 10) {
+      times = times.slice(0, 10)
     }
+    return (
+      <div>
+        <div>
+          {
+            times.map((v) => {
+              return (<Tag color="green" onClick={() => this.searchRank({time: v, player: row.player})} key={v}>
+                {moment(v).format("YYYY-MM-DD HH:mm:ss")}</Tag>)
+            })
+          }
+        </div>
+      </div>)
   }
 
   searchRank(record) {

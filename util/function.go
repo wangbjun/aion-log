@@ -1,11 +1,14 @@
 package util
 
 import (
+	"bytes"
 	"crypto/md5"
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
 	"github.com/google/uuid"
+	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/transform"
 	"hash"
 	"io"
 	"unicode"
@@ -83,4 +86,14 @@ func RemoveRomanNumber(s string) string {
 		}
 	}
 	return ""
+}
+
+func IsGBK(data []byte) bool {
+	reader := transform.NewReader(bytes.NewReader(data), simplifiedchinese.GB18030.NewDecoder())
+	_, err := io.ReadAll(reader)
+	return err == nil
+}
+
+func IsUTF8(data []byte) bool {
+	return bytes.Equal([]byte(data), data)
 }

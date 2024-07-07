@@ -32,5 +32,5 @@ export const playerPros = [
   {name: "护法", logo: "hf.png"},
   {name: "精灵", logo: "jl.png"},
   {name: "魔道", logo: "md.png"},
-  {name: "执行者", logo: "zxz.png"},
+  {name: "执行", logo: "zxz.png"},
 ]

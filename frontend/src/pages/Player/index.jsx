@@ -1,10 +1,11 @@
-import {Button, Card, Col, DatePicker, Form, Input, message, Row, Select, Statistic, Table, Tag} from 'antd';
+import {Button, Card, Col, DatePicker, Empty, Form, Input, message, Row, Select, Statistic, Table, Tag} from 'antd';
 import React from 'react';
 import {PageContainer} from '@ant-design/pro-layout';
 import {connect} from "@/.umi/plugin-dva/exports";
 import moment from "moment";
 import {Link} from 'umi';
 import {playerPros} from "@/utils/utils";
+import { Pie } from '@ant-design/plots';
 
 const {RangePicker} = DatePicker
 const {Option} = Select
@@ -25,7 +26,6 @@ class Player extends React.Component {
         title: "玩家",
         dataIndex: 'name',
         key: 'name',
-        defaultSortOrder: 'ascend',
         sorter: function (a, b) {
           return a.name.localeCompare(b.name)
         },
@@ -96,6 +96,7 @@ class Player extends React.Component {
         dataIndex: 'time',
         key: 'time',
         width: 180,
+        defaultSortOrder: 'descend',
         sorter: function (a, b) {
           return moment(a.time).isAfter(moment(b.time))
         },
@@ -232,25 +233,77 @@ class Player extends React.Component {
   }
 
   getClassData(data) {
-    let class2num = new Map();
+    let class2num = {};
     data.forEach(v => {
       if (v.type === 0) {
         return
       }
-      if (class2num.has(v.class)) {
-        class2num.set(v.class, class2num.get(v.class) + 1);
+      if (class2num[v.class]) {
+        class2num[v.class] =  class2num[v.class] + 1;
       } else {
-        class2num.set(v.class, 1);
+        class2num[v.class] = 1;
       }
     });
-    return class2num
+    let result = []
+    Object.keys(class2num).forEach(key => {
+      result.push({
+        type: playerPros[key].name,
+        value: class2num[key]
+      });
+    })
+    return result
+  }
+
+  getServerData(data) {
+    let server2num = new Map();
+    data.forEach(v => {
+      const parts = v.name.split("-");
+      if (parts.length !== 2) {
+        return
+      }
+      let serverName = parts[1]
+      if (server2num.has(serverName)) {
+        server2num.set(serverName, server2num.get(serverName) + 1);
+      } else {
+        server2num.set(serverName, 1);
+      }
+    });
+    return server2num
   }
 
   render() {
     const {playerList, loading} = this.props
     const statData = this.getStatData(playerList)
     const classData = this.getClassData(playerList)
-    console.log(classData)
+    const serverData = this.getServerData(playerList)
+    const config = {
+      data: classData,
+      autoFit: true,
+      angleField: 'value',
+      colorField: 'type',
+      label: {
+        text: 'type',
+        position: 'inside',
+        formatter: function (text, datum, index, data ) {
+          return `${text}: ${datum.value}`
+        }
+      },
+      legend: {
+        show: false,
+        color: {
+          position: 'right',
+          rowPadding: 3,
+        },
+      },
+      tooltip: (
+        d, // 每一个数据项
+        index, // 索引
+        data, // 完整数据
+        column, // 通道
+      ) => ({
+        value: `占比:${(d.value/(statData.tian+statData.mo)*100).toFixed(0)}%`,
+      })
+    };
     return (
       <PageContainer>
         <Card extra={this.searchForm()}>
@@ -259,31 +312,30 @@ class Player extends React.Component {
               <Card title="种族">
                 <Row gutter={24}>
                   <Col span={8}>
-                    <Statistic title="总数" value={statData.tian+statData.mo} style={{padding: "24px"}} valueStyle={{color: "red"}}/>
+                    <Statistic title="总数" value={statData.tian+statData.mo} style={{padding: "12px"}} valueStyle={{color: "red"}}/>
                   </Col>
                   <Col span={8}>
-                    <Statistic title="天族" value={statData.tian} style={{padding: "24px"}} valueStyle={{color: "green"}}/>
+                    <Statistic title="天族" value={statData.tian} style={{padding: "12px"}} valueStyle={{color: "green"}}/>
                   </Col>
                   <Col span={8}>
-                    <Statistic title="魔族" value={statData.mo} style={{padding: "24px"}} valueStyle={{color: "blue"}}/>
+                    <Statistic title="魔族" value={statData.mo} style={{padding: "12px"}} valueStyle={{color: "blue"}}/>
                   </Col>
                 </Row>
               </Card>
               <Card title="职业">
                 <Row gutter={24}>
+                  { classData.length ? <Pie {...config} />: <Empty/>}
+                </Row>
+              </Card>
+              <Card title="区服">
+                <Row gutter={24}>
                   {
-                    playerPros.map((v, k) => {
-                      if (k === 0) {
-                        return
-                      }
-                      return  <Col span={6}>
-                        <Statistic title={v.name} value={classData.get(k)} style={{padding: "24px"}} valueStyle={{color: "orange"}}/>
+                    Array.from(serverData.entries()).map((v, k) => {
+                      return  <Col span={6} key={k}>
+                        <Statistic title={v[0]} value={v[1]} style={{padding: "12px"}} valueStyle={{color: "green"}}/>
                       </Col>
                     })
                   }
-                  <Col span={6}>
-                    <Statistic title="未知" value={classData.get(0)} style={{padding: "24px"}} valueStyle={{color: "grey"}}/>
-                  </Col>
                 </Row>
               </Card>
             </Col>
@@ -294,7 +346,7 @@ class Player extends React.Component {
                 columns={this.columns}
                 dataSource={playerList}
                 rowKey={(record) => {
-                  return record.name + record.type
+                  return record.id
                 }}
                 pagination={{
                   defaultPageSize: 20,

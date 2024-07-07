@@ -16,12 +16,10 @@ export default [
       },
       {
         path: '/',
-        component: '../layouts/SecurityLayout',
         routes: [
           {
             path: '/',
             component: '../layouts/BasicLayout',
-            authority: ['user', 'guest'],
             routes: [
               {
                 path: '/',

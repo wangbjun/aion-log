@@ -7,8 +7,8 @@ import (
 )
 
 func Route(Router *gin.Engine) {
+	Router.Use(middleware.Request())
 	Router.GET("/", BaseController.Index)
-
 	api := Router.Group("/api")
 	{
 		v1 := api.Group("/v1")

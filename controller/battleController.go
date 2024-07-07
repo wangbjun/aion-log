@@ -3,7 +3,9 @@ package controller
 import (
 	"aion/model"
 	"github.com/gin-gonic/gin"
+	"github.com/patrickmn/go-cache"
 	"strconv"
+	"time"
 )
 
 type battleController struct {
@@ -38,8 +40,8 @@ func (r battleController) GetAll(ctx *gin.Context) {
 		page = 1
 	}
 	pageSize, err := strconv.Atoi(queryPageSize)
-	if err != nil || pageSize < 0 || pageSize > 100 {
-		pageSize = 100
+	if err != nil || pageSize < 0 || pageSize > 1000 {
+		pageSize = 1000
 	}
 	data, count, err := model.Log{}.GetAll(st, et, page, pageSize, queryPlayer, queryTarget, querySkill, sort)
 	if err != nil {
@@ -103,13 +105,19 @@ type skillCount struct {
 	Count  int
 }
 
+var CachedData = cache.New(6*time.Hour, 30*time.Minute)
+
 func (r battleController) GetPlayers(ctx *gin.Context) {
+	var key = "all_player_info"
+	if cached, found := CachedData.Get(key); found {
+		r.Success(ctx, "ok", map[string]interface{}{"list": cached.([]*model.Player)})
+		return
+	}
 	players, err := model.Player{}.GetAll()
 	if err != nil {
 		r.Failed(ctx, Failed, err.Error())
 		return
 	}
-
 	var result []skillCount
 	skillCountSql := "select player,count(1) count from (select player from aion_player_battle_log " +
 		"where skill != '' group by player,skill,time) t1 group by t1.player"
@@ -152,5 +160,8 @@ func (r battleController) GetPlayers(ctx *gin.Context) {
 		player.KillCount = playerKillCount[player.Name]
 		player.DeathCount = playerDeathCount[player.Name]
 	}
+
+	CachedData.Set(key, players, cache.DefaultExpiration)
+
 	r.Success(ctx, "ok", map[string]interface{}{"list": players})
 }

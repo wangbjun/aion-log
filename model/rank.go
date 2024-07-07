@@ -44,7 +44,8 @@ func (r Rank) GetAll(st, et, level string) ([]RankResult, error) {
 }
 
 func (r Rank) GetRanks() ([]Rank, error) {
-	sql := "select player,count(DISTINCT(skill)) count,time from aion_player_battle_log group by player,time HAVING count(DISTINCT(skill)) >= 3"
+	sql := "select player,count(DISTINCT(skill)) count,time from aion_player_battle_log where skill != '' " +
+		"group by player,time HAVING count(DISTINCT(skill)) >= 3"
 	var results []Rank
 	err := DB().Raw(sql).Find(&results).Error
 	if err != nil {

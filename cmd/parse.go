@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"aion/model"
 	"aion/service"
 	"github.com/spf13/cobra"
 )
@@ -22,11 +23,23 @@ var parseCmd = &cobra.Command{
 			cmd.Usage()
 			return
 		}
-		parser := service.NewParseService()
-		err := parser.Run(logFile)
+		err := model.DB().Exec("truncate table aion_player_battle_log").Error
 		if err != nil {
 			cmd.PrintErrln(err)
 			return
 		}
+		err = model.DB().Exec("truncate table aion_player_info").Error
+		if err != nil {
+			cmd.PrintErrln(err)
+			return
+		}
+		parser := service.NewParseService()
+		err = parser.Run(logFile)
+		if err != nil {
+			cmd.PrintErrln(err)
+			return
+		}
+		service.NewClassifyService().Run()
+		service.NewRankService().Run()
 	},
 }

@@ -233,6 +233,7 @@ class Log extends React.Component {
       pageSize: pageSize,
       defaultPageSize: 20,
       total: logList.total,
+      pageSizeOptions:['50', '100', '200', '500'],
       showTotal: (total) => `共${total}条记录`,
       onChange: async (page, pageSize) => {
         await this.setState({page, pageSize})

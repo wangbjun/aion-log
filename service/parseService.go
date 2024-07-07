@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"io"
+	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -27,7 +28,7 @@ var (
 
 var classSkills = map[int][]string{
 	model.JX: {"飞刀", "飞刀连射", "猛烈一击", "身体重击", "愤怒一击", "杀气破裂", "吸血波", "地震波动", "冲击波动", "激怒爆炸",
-		"剑气波动", "杀气波动", "强制捆绑", "下刺", "最后一击", "腾空斩击", "生存姿态", "集中格挡", "翅膀强化", "突击姿态", "愤怒波动"},
+		"剑气波动", "剑气破裂", "杀气波动", "强制捆绑", "下刺", "最后一击", "腾空斩击", "生存姿态", "集中格挡", "翅膀强化", "突击姿态", "愤怒波动"},
 	model.SH: {"主神的惩罚", "脚踝重击", "盾牌反击", "处决一击", "天雷斩", "主神惩罚", "审判", "集中捕获", "捕获", "精神破坏", "激昂",
 		"闪光斩", "保护之盾", "庇护之盔甲", "阻断之甲", "破坏之气合", "主神盔甲", "双重盔甲", "俘虏"},
 	model.SX: {"暗杀者步伐", "猛兽的咆哮", "绝魂斩", "反击", "影子下坠", "暗破", "暗袭", "灭杀", "猛兽之牙", "背后重击", "进击斩",
@@ -40,9 +41,9 @@ var classSkills = map[int][]string{
 		"神速之咒语", "激怒之咒语", "鼓吹之咒语", "保护阵", "守护之祝福", "阻断之幕", "疾走之咒语"},
 	model.JL: {"吸引", "幽冥之苦痛", "愤怒之漩涡", "真空爆炸", "精灵弱化", "诅咒之云", "大地之锁链", "范围侵蚀", "魔法解除", "侵蚀",
 		"精神协调", "召唤:风之精灵"},
-	model.MD: {"冬季的束缚", "冰河重击", "流星重击", "火焰爆发", "元气吸收", "台风重击", "冷气召唤", "暴风重击",
+	model.MD: {"火焰熔解", "混乱的咒语", "冬季的束缚", "冰河重击", "流星重击", "火焰爆发", "元气吸收", "台风重击", "冷气召唤", "暴风重击",
 		"火焰乱舞", "火焰叉", "结冰", "时空扭曲", "白杰尔的智慧", "神速的恩惠", "元素结界", "冰雪甲冑", "铁甲之恩惠", "魔力倍增"},
-	model.ZXZ: {"攻", "断", "击", "雷", "电击突袭", "爆雷打", "雷电大爆炸", "斩", "电流波动", "呼啸雷电"},
+	model.ZXZ: {"攻", "断", "击", "雷", "电击突袭", "爆雷打", "雷电大爆炸", "斩", "电流波动", "呼啸雷电", "电雷重击", "命运之执行者"},
 }
 
 const WorkerNum = 5
@@ -98,12 +99,13 @@ func (r *Parser) Run(fileName string) error {
 		}
 		line, err := decoder.Bytes(a)
 		if err != nil {
-			continue
-		}
-		if len(line) == 0 {
+			log.Printf("decoder error: %s", err)
 			continue
 		}
 		text := string(line)
+		if len(line) == 0 {
+			continue
+		}
 		r.lineChan <- text
 	}
 	close(r.lineChan)
@@ -111,13 +113,6 @@ func (r *Parser) Run(fileName string) error {
 	close(r.resultLog)
 	close(r.resultPlayer)
 	wg2.Wait()
-
-	for _, player := range r.uniquePlayer {
-		model.Player{}.Insert(player)
-	}
-
-	NewClassifyService().Run()
-
 	return nil
 }
 
@@ -152,14 +147,14 @@ func (r *Parser) processResult(wg *sync.WaitGroup) {
 	var logItems []model.Log
 	for {
 		select {
-		case log, ok := <-r.resultLog:
+		case battleLog, ok := <-r.resultLog:
 			if !ok {
 				doneLog = true
 			} else {
-				if strings.Contains(log.Target, "训练用稻草人") {
+				if strings.Contains(battleLog.Target, "训练用稻草人") {
 					continue
 				}
-				logItems = append(logItems, log)
+				logItems = append(logItems, battleLog)
 				if len(logItems) >= 500 {
 					model.Log{}.BatchInsert(logItems)
 					logItems = []model.Log{}
@@ -179,6 +174,7 @@ func (r *Parser) processResult(wg *sync.WaitGroup) {
 					if existed.Class == 0 {
 						existed.Class = player.Class
 					}
+					existed.Time = player.Time
 					r.uniquePlayer[player.Name] = existed
 				} else {
 					r.uniquePlayer[player.Name] = player
@@ -187,6 +183,11 @@ func (r *Parser) processResult(wg *sync.WaitGroup) {
 		}
 		if doneLog && donePlayer {
 			model.Log{}.BatchInsert(logItems)
+			var result []model.Player
+			for _, player := range r.uniquePlayer {
+				result = append(result, player)
+			}
+			model.Player{}.BatchInsert(result)
 			return
 		}
 	}
@@ -237,7 +238,6 @@ func (r *Parser) parseAttackB(line string) error {
 	}
 	r.resultLog <- model.Log{
 		Player: player,
-		Skill:  "普通攻击",
 		Target: match[2],
 		Value:  formatDamage(match[3]),
 		Time:   formatTime(line),

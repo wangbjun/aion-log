@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -41,9 +42,12 @@ func (r Player) TableName() string {
 	return "aion_player_info"
 }
 
-func (r Player) Insert(player Player) error {
-	value := fmt.Sprintf("('%s', %d, %d, '%s')", player.Name, player.Type, player.Class, player.Time.Format(time.DateTime))
-	sql := "INSERT INTO aion_player_info (name, type, class, time) VALUES " + value + " ON DUPLICATE KEY UPDATE time = VALUES(time)"
+func (r Player) BatchInsert(items []Player) error {
+	sql := "INSERT INTO `aion_player_info` (`name`,`type`,`class`,`time`) VALUES "
+	for _, v := range items {
+		sql += fmt.Sprintf("('%s',%d,'%d','%s'),", v.Name, v.Type, v.Class, v.Time.Format(time.DateTime))
+	}
+	sql = strings.TrimRight(sql, ",")
 	return DB().Exec(sql).Error
 }
 
