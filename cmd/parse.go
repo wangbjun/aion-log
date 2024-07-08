@@ -23,7 +23,7 @@ var parseCmd = &cobra.Command{
 			cmd.Usage()
 			return
 		}
-		err := model.DB().Exec("truncate table aion_player_battle_log").Error
+		err := model.DB().Exec("truncate table aion_player_chat_log").Error
 		if err != nil {
 			cmd.PrintErrln(err)
 			return

@@ -168,7 +168,7 @@ class Rank extends React.Component {
           let results = []
           const parts = value.split(row.skill);
           results.push(parts[0])
-          if (row.skill !== "普通攻击") {
+          if (row.skill !== "attack") {
             results.push(<span style={{color: "red", fontWeight: "bold"}} key={1}>{row.skill}</span>)
           }
           results.push(parts[1])
@@ -218,31 +218,26 @@ class Rank extends React.Component {
     this.query()
   }
 
-  query = (d, ds) => {
+  query = () => {
     const {dispatch} = this.props
     const fieldValue = this.formRef.current.getFieldValue();
-    let st = fieldValue.time && fieldValue.time[0].format("YYYY-MM-DD HH:mm:ss")
-    let et = fieldValue.time && fieldValue.time[1].format("YYYY-MM-DD HH:mm:ss")
     dispatch({
       type: 'global/fetchRankList',
       payload: {
-        st: ds && ds[0] || st,
-        et: ds && ds[1] || et,
         level: fieldValue.level ?? "3",
         name: fieldValue.name,
-        pro: fieldValue.pro
+        class: fieldValue.class
       },
     });
   }
 
   onReset = () => {
     this.formRef.current.resetFields();
-    this.formRef.current.setFieldsValue({level: "4"})
+    this.formRef.current.setFieldsValue({level: "3"})
     this.query()
   };
 
   searchForm() {
-    const dateFormat = 'YYYY-MM-DD HH:mm:ss';
     const onFinish = async () => {
       this.query()
     };
@@ -253,20 +248,6 @@ class Rank extends React.Component {
         autoComplete="false"
         ref={this.formRef}
       >
-        <Form.Item label="时间" name="time" style={{marginTop: "5px"}}>
-          <RangePicker
-            format={dateFormat}
-            ranges={{
-              今天: [moment().startOf('day'), moment().endOf('day')],
-              昨天: [moment().subtract(1, 'day').startOf('day'), moment().subtract(1, 'day').endOf('day')],
-              最近3天: [moment().subtract(2, 'day').startOf('day'), moment().endOf('day')],
-              最近7天: [moment().subtract(6, 'day').startOf('day'), moment().endOf('day')],
-            }}
-            allowClear
-            showTime={{defaultValue: moment('00:00:00', 'HH:mm:ss')}}
-            onChange={(d, ds) => this.query(d, ds)}
-          />
-        </Form.Item>
         <Form.Item label="段位" name="level" style={{marginTop: "5px"}}>
           <Select
             allowClear
@@ -287,7 +268,7 @@ class Rank extends React.Component {
         <Form.Item label="玩家" name="name" style={{marginTop: "5px"}}>
           <Input allowClear placeholder="请输入"/>
         </Form.Item>
-        <Form.Item label="职业" name="pro" style={{marginTop: "5px"}}>
+        <Form.Item label="职业" name="class" style={{marginTop: "5px"}}>
           <Select
             allowClear
             showSearch

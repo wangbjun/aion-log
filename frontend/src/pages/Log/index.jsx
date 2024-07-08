@@ -5,6 +5,7 @@ import {connect} from "@/.umi/plugin-dva/exports";
 import moment from "moment";
 import {parse} from 'querystring'
 import {playerPros} from "@/utils/utils";
+import "./log.css"
 
 const {RangePicker} = DatePicker
 const {Option} = Select
@@ -20,24 +21,17 @@ class Log extends React.Component {
 
   state = {
     page: 1,
-    pageSize: 20,
+    pageSize: 50,
   }
 
   constructor(props) {
     super(props);
     this.columns = [
       {
-        title: "时间",
-        dataIndex: 'time',
-        key: 'time',
-        width: "10%",
-        render: this.renderTime
-      },
-      {
         title: "玩家",
         dataIndex: 'player',
         key: 'player',
-        width: "18%",
+        width: "16%",
         render: function (value, row) {
           let color = "grey"
           let typeName = ""
@@ -51,14 +45,15 @@ class Log extends React.Component {
             color = "orange"
             typeName = "其它"
           }
-          return <div><Tag className="custom-tag" color={color}>{typeName}</Tag><Tag className="custom-tag">{playerPros[row.player_class].name}</Tag><span>{value}</span></div>
+          return <div><Tag className="custom-tag" color={color}>{typeName}</Tag><Tag
+            className="custom-tag">{playerPros[row.player_class].name}</Tag><span>{value}</span></div>
         }
       },
       {
         title: "对象",
         dataIndex: 'target',
         key: 'target',
-        width: "18%",
+        width: "16%",
         render: function (value, row) {
           if (!value) {
             return <div>{value}</div>;
@@ -75,7 +70,8 @@ class Log extends React.Component {
             color = "orange"
             typeName = "其它"
           }
-          return <div><Tag className="custom-tag" color={color}>{typeName}</Tag><Tag className="custom-tag">{playerPros[row.target_class].name}</Tag><span>{value}</span></div>
+          return <div><Tag className="custom-tag" color={color}>{typeName}</Tag><Tag
+            className="custom-tag">{playerPros[row.target_class].name}</Tag><span>{value}</span></div>
         }
       },
       {
@@ -85,12 +81,19 @@ class Log extends React.Component {
         width: "6%",
       },
       {
+        title: "时间",
+        dataIndex: 'time',
+        key: 'time',
+        width: "10%",
+        render: this.renderTime
+      },
+      {
         title: "原始日志",
         dataIndex: 'raw_msg',
         key: 'raw_msg',
         width: "50%",
         render: function (value, row) {
-          if (value.indexOf("打倒了。") !== -1 || value.indexOf("攻击而终结。") !== -1) {
+          if (row.skill === "kill" || row.skill === "killed") {
             return <div style={{color: "deeppink"}}>{value}</div>;
           }
           if (!row.skill) {
@@ -99,13 +102,13 @@ class Log extends React.Component {
           let results = []
           const parts = value.split(row.skill);
           results.push(parts[0])
-          if (row.skill !== "普通攻击") {
+          if (row.skill !== "attack") {
             results.push(<span style={{color: "red", fontWeight: "bold"}} key={1}>{row.skill}</span>)
           }
           results.push(parts[1])
           return <div>{results}</div>;
-        }
-      },
+        },
+      }
     ];
   }
 
@@ -150,7 +153,7 @@ class Log extends React.Component {
         pageSize,
         st: ds && ds[0] || st,
         et: ds && ds[1] || et,
-        player, target, skill,value,
+        player, target, skill, value,
         sort: fieldValue.sort
       },
     });
@@ -189,20 +192,20 @@ class Log extends React.Component {
             allowClear
             showTime={{defaultValue: moment('00:00:00', 'HH:mm:ss')}}
             onChange={(d, ds) => this.query(d, ds)}
-            style={{ width: 300 }}
+            style={{width: 300}}
           />
         </Form.Item>
         <Form.Item label="技能" name="skill">
-          <Input allowClear placeholder="请输入" style={{ width: 150 }} />
+          <Input allowClear placeholder="请输入" style={{width: 150}}/>
         </Form.Item>
         <Form.Item label="玩家" name="player">
-          <Input allowClear placeholder="请输入" style={{ width: 150 }}/>
+          <Input allowClear placeholder="请输入" style={{width: 150}}/>
         </Form.Item>
         <Form.Item label="对象" name="target">
-          <Input allowClear placeholder="请输入" style={{ width: 150 }}/>
+          <Input allowClear placeholder="请输入" style={{width: 150}}/>
         </Form.Item>
         <Form.Item label="伤害大于" name="value">
-          <Input allowClear placeholder="请输入" style={{ width: 100 }}/>
+          <Input allowClear placeholder="请输入" style={{width: 100}}/>
         </Form.Item>
         <Form.Item label="排序" name="sort">
           <Select
@@ -214,7 +217,7 @@ class Log extends React.Component {
               option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
             }
             onSelect={() => this.query()}
-            style={{ width: 100 }}
+            style={{width: 100}}
           >
             <Option value="time">时间</Option>
             <Option value="value">伤害</Option>
@@ -241,15 +244,30 @@ class Log extends React.Component {
     const pagination = {
       current: page,
       pageSize: pageSize,
-      defaultPageSize: 20,
+      defaultPageSize: 50,
       total: logList.total,
-      pageSizeOptions:['50', '100', '200', '500'],
+      pageSizeOptions: ['50', '100', '200', '500'],
       showTotal: (total) => `共${total}条记录`,
       onChange: async (page, pageSize) => {
         await this.setState({page, pageSize})
         this.query().then()
-      },
-      hideOnSinglePage: true
+      }
+    }
+    let color = "row-odd"
+    const rowClassName = (record, index) => {
+      if (index === 0) {
+        return color
+      }
+      if (record.time === logList.list[index - 1].time && record.player === logList.list[index - 1].player) {
+        return color
+      } else {
+        if (color === "row-odd") {
+          color = "row-even"
+        } else {
+          color = "row-odd"
+        }
+      }
+      return color
     }
     return (
       <PageContainer>
@@ -264,6 +282,7 @@ class Log extends React.Component {
             }}
             pagination={pagination}
             loading={loading}
+            rowClassName={rowClassName}
           />
         </Card>
       </PageContainer>

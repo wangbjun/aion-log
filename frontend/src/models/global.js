@@ -1,5 +1,5 @@
 import {queryLogList, queryPlayer, queryRankList} from "@/services/api";
-import moment from "moment";
+import {notification} from "antd";
 
 const GlobalModel = {
   namespace: 'global',
@@ -14,6 +14,10 @@ const GlobalModel = {
   effects: {
     * fetchLogList({payload}, {call, put, select}) {
       const result = yield call(queryLogList, payload);
+      if (result.code !== 200) {
+        notification.error(result.msg);
+        return
+      }
       yield put({
         type: 'saveDefault',
         payload: {
@@ -23,15 +27,21 @@ const GlobalModel = {
     },
     * fetchRankList({payload}, {call, put, select}) {
       const result = yield call(queryRankList, payload);
+      if (result.code !== 200) {
+        notification.error({
+          message: result.msg
+        });
+        return
+      }
       let list = result.data.list
       if (payload.name) {
         list = list.filter(v => {
           return v.player.indexOf(payload.name) !== -1
         })
       }
-      if (payload.pro !== undefined) {
+      if (payload.class !== undefined) {
         list = list.filter(v => {
-          return v.pro === parseInt(payload.pro)
+          return v.class === parseInt(payload.class)
         })
       }
       list.forEach(v => {
@@ -46,17 +56,13 @@ const GlobalModel = {
     },
     * fetchPlayerList({payload}, {call, put, select}) {
       const result = yield call(queryPlayer, payload);
+      if (result.code !== 200) {
+        notification.error({
+          message: result.msg
+        });
+        return
+      }
       let list = result.data.list
-      if (payload.st) {
-        list = list.filter(v => {
-          return moment(v.time).isAfter(moment(payload.st))
-        })
-      }
-      if (payload.et) {
-        list = list.filter(v => {
-          return moment(v.time).isBefore(moment(payload.et))
-        })
-      }
       if (payload.name) {
         list = list.filter(v => {
           return v.name.indexOf(payload.name) !== -1

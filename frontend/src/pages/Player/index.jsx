@@ -1,11 +1,12 @@
-import {Button, Card, Col, DatePicker, Empty, Form, Input, message, Row, Select, Statistic, Table, Tag} from 'antd';
+import {Button, Card, Col, DatePicker, Empty, Form, Input, Row, Select, Statistic, Table, Tag} from 'antd';
 import React from 'react';
 import {PageContainer} from '@ant-design/pro-layout';
 import {connect} from "@/.umi/plugin-dva/exports";
 import moment from "moment";
 import {Link} from 'umi';
 import {playerPros} from "@/utils/utils";
-import { Pie } from '@ant-design/plots';
+import {Pie} from '@ant-design/plots';
+import "./index.css"
 
 const {RangePicker} = DatePicker
 const {Option} = Select
@@ -65,7 +66,7 @@ class Player extends React.Component {
         }
       },
       {
-        title: "攻击次数",
+        title: "技能次数",
         dataIndex: 'skill_count',
         key: 'skill_count',
         width: 100,
@@ -96,7 +97,6 @@ class Player extends React.Component {
         dataIndex: 'time',
         key: 'time',
         width: 180,
-        defaultSortOrder: 'descend',
         sorter: function (a, b) {
           return moment(a.time).isAfter(moment(b.time))
         },
@@ -118,8 +118,12 @@ class Player extends React.Component {
   query = () => {
     const {dispatch} = this.props
     const fieldValue = this.formRef.current.getFieldValue();
-    let st = fieldValue.time && fieldValue.time[0].format("YYYY-MM-DD HH:mm:ss")
-    let et = fieldValue.time && fieldValue.time[1].format("YYYY-MM-DD HH:mm:ss")
+    let st = moment().subtract(6, 'day').startOf('day').format("YYYY-MM-DD HH:mm:ss")
+    let et = moment().endOf('day').format("YYYY-MM-DD HH:mm:ss")
+    if (fieldValue.time) {
+      st = fieldValue.time[0].format("YYYY-MM-DD HH:mm:ss")
+      et = fieldValue.time[1].format("YYYY-MM-DD HH:mm:ss")
+    }
     dispatch({
       type: 'global/fetchPlayerList',
       payload: {
@@ -151,6 +155,7 @@ class Player extends React.Component {
         <Form.Item label="时间" name="time">
           <RangePicker
             format={dateFormat}
+            defaultValue={[moment().subtract(6, 'day').startOf('day'), moment().endOf('day')]}  // 设置默认值为最近7天
             ranges={{
               今天: [moment().startOf('day'), moment().endOf('day')],
               昨天: [moment().subtract(1, 'day').startOf('day'), moment().subtract(1, 'day').endOf('day')],
@@ -160,13 +165,13 @@ class Player extends React.Component {
             allowClear
             showTime={{defaultValue: moment('00:00:00', 'HH:mm:ss')}}
             onChange={(d, ds) => this.query(d, ds)}
-            style={{ width: 300 }}
+            style={{width: 350}}
           />
         </Form.Item>
         <Form.Item label="玩家" name="name">
-          <Input allowClear placeholder="请输入" style={{ width: 150 }}/>
+          <Input allowClear placeholder="请输入" style={{width: 150}}/>
         </Form.Item>
-        <Form.Item label="种族" name="type" >
+        <Form.Item label="种族" name="type">
           <Select
             allowClear
             showSearch
@@ -183,7 +188,7 @@ class Player extends React.Component {
             <Option value="0">其它</Option>
           </Select>
         </Form.Item>
-        <Form.Item label="职业" name="class" >
+        <Form.Item label="职业" name="class">
           <Select
             allowClear
             showSearch
@@ -239,7 +244,7 @@ class Player extends React.Component {
         return
       }
       if (class2num[v.class]) {
-        class2num[v.class] =  class2num[v.class] + 1;
+        class2num[v.class] = class2num[v.class] + 1;
       } else {
         class2num[v.class] = 1;
       }
@@ -247,7 +252,7 @@ class Player extends React.Component {
     let result = []
     Object.keys(class2num).forEach(key => {
       result.push({
-        type: playerPros[key].name + ": " +class2num[key],
+        type: playerPros[key].name + ": " + class2num[key],
         value: class2num[key]
       });
     })
@@ -278,13 +283,17 @@ class Player extends React.Component {
     const serverData = this.getServerData(playerList)
     const config = {
       data: classData,
-      autoFit: true,
+      height: 350,
       angleField: 'value',
       colorField: 'type',
       label: {
         text: 'type',
         position: 'inside',
         formatter: (text, datum, index, data) => {
+          const ratio = datum.value / (statData.tian + statData.mo)
+          if (ratio < 0.05) {
+            return ''
+          }
           return text.split(":")[0]
         }
       },
@@ -301,7 +310,7 @@ class Player extends React.Component {
         data, // 完整数据
         column, // 通道
       ) => ({
-        value: `人数:${d.value},占比:${(d.value/(statData.tian+statData.mo)*100).toFixed(0)}%`,
+        value: `人数:${d.value},占比:${(d.value / (statData.tian + statData.mo) * 100).toFixed(0)}%`,
       })
     };
     return (
@@ -312,29 +321,32 @@ class Player extends React.Component {
               <Card title="种族">
                 <Row gutter={24}>
                   <Col span={6}>
-                    <Statistic title="总数" value={statData.tian+statData.mo} style={{padding: "12px"}} valueStyle={{color: "red"}}/>
+                    <Statistic title="总数" value={statData.tian + statData.mo} style={{padding: "12px"}}
+                               valueStyle={{color: "red"}}/>
                   </Col>
                   <Col span={6}>
-                    <Statistic title="天族" value={statData.tian} style={{padding: "12px"}} valueStyle={{color: "green"}}/>
+                    <Statistic title="天族" value={statData.tian} style={{padding: "12px"}}
+                               valueStyle={{color: "green"}}/>
                   </Col>
                   <Col span={6}>
                     <Statistic title="魔族" value={statData.mo} style={{padding: "12px"}} valueStyle={{color: "blue"}}/>
                   </Col>
                   <Col span={6}>
-                    <Statistic title="其它" value={statData.other} style={{padding: "12px"}} valueStyle={{color: "grey"}}/>
+                    <Statistic title="其它" value={statData.other} style={{padding: "12px"}}
+                               valueStyle={{color: "grey"}}/>
                   </Col>
                 </Row>
               </Card>
               <Card title="职业">
                 <Row gutter={24}>
-                  { classData.length ? <Pie {...config} />: <Empty/>}
+                  {classData.length ? <Pie {...config} /> : <Empty/>}
                 </Row>
               </Card>
               <Card title="区服">
                 <Row gutter={24}>
                   {
                     Array.from(serverData.entries()).map((v, k) => {
-                      return  <Col span={6} key={k}>
+                      return <Col span={6} key={k}>
                         <Statistic title={v[0]} value={v[1]} style={{padding: "12px"}} valueStyle={{color: "green"}}/>
                       </Col>
                     })
@@ -352,9 +364,8 @@ class Player extends React.Component {
                   return record.id
                 }}
                 pagination={{
-                  defaultPageSize: 20,
-                  hideOnSinglePage: true,
-                  pageSizeOptions:['50', '100', '200', '500'],
+                  defaultPageSize: 25,
+                  pageSizeOptions: ['50', '100', '200', '500'],
                   showTotal: (total) => `共${total}条记录`,
                 }}
                 loading={loading}

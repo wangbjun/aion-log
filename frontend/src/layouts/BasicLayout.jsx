@@ -4,7 +4,7 @@
  * @see You can view component api by: https://github.com/ant-design/ant-design-pro-layout
  */
 import ProLayout, {DefaultFooter} from '@ant-design/pro-layout';
-import React, {useEffect, useMemo, useRef} from 'react';
+import React, {useMemo, useRef} from 'react';
 import {connect, history, Link} from 'umi';
 import {Button, Modal, Result} from 'antd';
 import Authorized from '@/utils/Authorized';

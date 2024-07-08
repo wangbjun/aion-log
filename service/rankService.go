@@ -16,12 +16,22 @@ func (r RankService) Run() error {
 	if err != nil {
 		return fmt.Errorf("clean table error:" + err.Error())
 	}
-	ranks, err := model.Rank{}.GetRanks()
+
+	ranks, err := model.ChatLog{}.GetRanks()
 	if err != nil {
 		return fmt.Errorf("GetRanks Failed: " + err.Error())
 	}
-	for _, v := range ranks {
-		_ = v.Save()
+
+	var items []model.Rank
+	for i, v := range ranks {
+		items = append(items, v)
+		if len(items) >= 500 || i == len(items)-1 {
+			err = model.Rank{}.BatchInsert(items)
+			if err != nil {
+				return fmt.Errorf("BatchInsert Failed: " + err.Error())
+			}
+			items = make([]model.Rank, 0)
+		}
 	}
 	return nil
 }

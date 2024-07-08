@@ -16,14 +16,6 @@ func Route(Router *gin.Engine) {
 			v1.GET("/logs", BattleController.GetAll).
 				GET("/ranks", BattleController.GetRank).
 				GET("/players", BattleController.GetPlayers)
-
-			v1.Group("/user").
-				POST("/register", UserController.Register). //用户注册
-				POST("/login", UserController.Login).       //用户登录
-				GET("/current", UserController.Current)     //用户登录
-
-			v1.Group("/user").Use(middleware.Auth()).
-				POST("/logout", UserController.Logout) //用户退出登录
 		}
 	}
 }

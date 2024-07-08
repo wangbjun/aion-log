@@ -56,3 +56,11 @@ func (r Player) GetAll() ([]*Player, error) {
 	err := DB().Find(&results).Error
 	return results, err
 }
+
+func (r Player) GetByTime(st, et string) ([]*Player, error) {
+	var results []*Player
+	sqlA := "select distinct(player) name from aion_player_chat_log where time >= '" + st + "' AND time <= '" + et + "'"
+	sqlB := "select distinct(target) name from aion_player_chat_log where target != '' and time >= '" + st + "' AND time <= '" + et + "'"
+	err := DB().Raw(sqlA + " union " + sqlB).Find(&results).Error
+	return results, err
+}

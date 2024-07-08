@@ -18,19 +18,19 @@ import (
 )
 
 var (
-	regDeathA  = regexp.MustCompile("(.*?)把(.*?)打倒了")
-	regDeathB  = regexp.MustCompile("(.*?)倒下了")
-	regDeathC  = regexp.MustCompile("(.*?)受到(.*?)的攻击而终结")
+	regDeathA  = regexp.MustCompile("(.*?)把(.*?)打倒了。")
+	regDeathB  = regexp.MustCompile("(.*?)倒下了。")
+	regDeathC  = regexp.MustCompile("(.*?)受到(.*?)的攻击而终结。")
 	regAttackA = regexp.MustCompile("(.*?)使用(.*?)技能，对(.*?)造成了(.*)的伤害")
 	regAttackB = regexp.MustCompile("(.*?)给(.*?)造成了(.*)的伤害")
-	regAttackC = regexp.MustCompile("(.*?)使用(.*?)技能")
+	regAttackC = regexp.MustCompile("(.*?)使用(.*?)技能，")
 )
 
 const WorkerNum = 5
 
 type Parser struct {
 	lineChan     chan string
-	resultLog    chan model.Log
+	resultLog    chan model.ChatLog
 	resultPlayer chan model.Player
 	uniquePlayer map[string]model.Player
 	skill2Class  map[string]model.Class
@@ -47,7 +47,7 @@ func NewParseService() Parser {
 	}
 	return Parser{
 		lineChan:     make(chan string, 1000),
-		resultLog:    make(chan model.Log, 1000),
+		resultLog:    make(chan model.ChatLog, 1000),
 		resultPlayer: make(chan model.Player, 1000),
 		uniquePlayer: make(map[string]model.Player, 1000),
 		skill2Class:  skill2Class,
@@ -126,27 +126,27 @@ func (r *Parser) processResult(wg *sync.WaitGroup) {
 	doneLog := false
 	donePlayer := false
 
-	var logItems []model.Log
+	var logItems []model.ChatLog
 	for {
 		select {
-		case battleLog, ok := <-r.resultLog:
+		case chatLog, ok := <-r.resultLog:
 			if !ok {
 				doneLog = true
 			} else {
-				if strings.Contains(battleLog.Target, "训练用稻草人") {
+				if !isValid(chatLog.Player) {
 					continue
 				}
-				logItems = append(logItems, battleLog)
-				if len(logItems) >= 500 {
-					model.Log{}.BatchInsert(logItems)
-					logItems = []model.Log{}
+				logItems = append(logItems, chatLog)
+				if len(logItems) > 500 {
+					model.ChatLog{}.BatchInsert(logItems)
+					logItems = []model.ChatLog{}
 				}
 			}
 		case player, ok := <-r.resultPlayer:
 			if !ok {
 				donePlayer = true
 			} else {
-				if player.Name == "" {
+				if !isValid(player.Name) {
 					continue
 				}
 				if existed, ok := r.uniquePlayer[player.Name]; ok {
@@ -164,10 +164,14 @@ func (r *Parser) processResult(wg *sync.WaitGroup) {
 			}
 		}
 		if doneLog && donePlayer {
-			model.Log{}.BatchInsert(logItems)
+			model.ChatLog{}.BatchInsert(logItems)
 			var result []model.Player
 			for _, player := range r.uniquePlayer {
 				result = append(result, player)
+				if len(result) > 500 {
+					model.Player{}.BatchInsert(result)
+					result = make([]model.Player, 0)
+				}
 			}
 			model.Player{}.BatchInsert(result)
 			return
@@ -181,15 +185,21 @@ func (r *Parser) parseAttackA(line string) error {
 	if len(match) != 5 {
 		return errors.New("parseAttackB matches fail:" + line)
 	}
-	player := strings.ReplaceAll(match[1], "致命一击！", "")
-	if player == "" {
-		player = "我"
+
+	var (
+		player = strings.ReplaceAll(match[1], "致命一击！", "")
+		target = match[3]
+		skill  = match[2]
+	)
+
+	if !isValid(player) || !isValid(target) {
+		return nil
 	}
-	skill := match[2]
-	r.resultLog <- model.Log{
+
+	r.resultLog <- model.ChatLog{
 		Player: player,
 		Skill:  skill,
-		Target: match[3],
+		Target: target,
 		Value:  formatDamage(match[4]),
 		Time:   formatTime(line),
 		RawMsg: line[22:],
@@ -200,7 +210,7 @@ func (r *Parser) parseAttackA(line string) error {
 		Time:  formatTime(line),
 	}
 	r.resultPlayer <- model.Player{
-		Name: match[3],
+		Name: target,
 		Time: formatTime(line),
 	}
 	return nil
@@ -215,14 +225,20 @@ func (r *Parser) parseAttackB(line string) error {
 	if len(match) != 4 {
 		return errors.New("ParseAttackA matches fail:" + line)
 	}
-	player := strings.ReplaceAll(match[1], "致命一击！", "")
-	if player == "" {
-		player = "我"
+
+	var (
+		player = strings.ReplaceAll(match[1], "致命一击！", "")
+		target = match[2]
+	)
+
+	if !isValid(player) || !isValid(target) {
+		return nil
 	}
-	r.resultLog <- model.Log{
+
+	r.resultLog <- model.ChatLog{
 		Player: player,
-		Skill:  "普通攻击",
-		Target: match[2],
+		Skill:  "attack",
+		Target: target,
 		Value:  formatDamage(match[3]),
 		Time:   formatTime(line),
 		RawMsg: line[22:],
@@ -232,7 +248,7 @@ func (r *Parser) parseAttackB(line string) error {
 		Time: formatTime(line),
 	}
 	r.resultPlayer <- model.Player{
-		Name: match[2],
+		Name: target,
 		Time: formatTime(line),
 	}
 	return nil
@@ -244,12 +260,16 @@ func (r *Parser) parseAttackC(line string) error {
 	if len(match) != 3 {
 		return errors.New("parseAttackC matches fail:" + line)
 	}
-	player := strings.ReplaceAll(match[1], "致命一击！", "")
-	if player == "" {
-		player = "我"
+
+	var (
+		player = strings.ReplaceAll(match[1], "致命一击！", "")
+		skill  = match[2]
+	)
+	if !isValid(player) {
+		return nil
 	}
-	skill := match[2]
-	r.resultLog <- model.Log{
+
+	r.resultLog <- model.ChatLog{
 		Player: player,
 		Skill:  skill,
 		Time:   formatTime(line),
@@ -269,19 +289,25 @@ func (r *Parser) parseDeathA(line string) error {
 	if len(match) != 3 {
 		return errors.New("parseDeathA matches fail:" + line)
 	}
-	r.resultLog <- model.Log{
-		Player: match[1],
-		Target: match[2],
+
+	var (
+		player = match[1]
+		target = match[2]
+	)
+	r.resultLog <- model.ChatLog{
+		Player: player,
+		Target: target,
+		Skill:  "kill",
 		Time:   formatTime(line),
 		RawMsg: line[22:],
 	}
 	r.resultPlayer <- model.Player{
-		Name: match[1],
+		Name: player,
 		Type: model.TypeBright,
 		Time: formatTime(line),
 	}
 	r.resultPlayer <- model.Player{
-		Name: match[2],
+		Name: target,
 		Type: model.TypeDark,
 		Time: formatTime(line),
 	}
@@ -294,6 +320,7 @@ func (r *Parser) parseDeathB(line string) error {
 	if len(match) != 2 {
 		return errors.New("parseDeathB matches fail:" + line)
 	}
+
 	r.resultPlayer <- model.Player{
 		Name: match[1],
 		Type: model.TypeDark,
@@ -308,19 +335,30 @@ func (r *Parser) parseDeathC(line string) error {
 	if len(match) != 3 {
 		return errors.New("parseDeathC matches fail:" + line)
 	}
-	r.resultLog <- model.Log{
-		Player: match[2],
-		Target: match[1],
+
+	var (
+		player = match[1]
+		target = match[2]
+	)
+
+	if !isValid(player) {
+		return nil
+	}
+
+	r.resultLog <- model.ChatLog{
+		Player: player,
+		Target: target,
+		Skill:  "killed",
 		Time:   formatTime(line),
 		RawMsg: line[22:],
 	}
 	r.resultPlayer <- model.Player{
-		Name: match[1],
+		Name: player,
 		Type: model.TypeBright,
 		Time: formatTime(line),
 	}
 	r.resultPlayer <- model.Player{
-		Name: match[2],
+		Name: target,
 		Type: model.TypeDark,
 		Time: formatTime(line),
 	}
@@ -336,4 +374,14 @@ func formatTime(ts string) time.Time {
 func formatDamage(ds string) int {
 	d, _ := strconv.Atoi(strings.ReplaceAll(ds, ",", ""))
 	return d
+}
+
+func isValid(name string) bool {
+	if name == "" {
+		return false
+	}
+	if name == "训练用稻草人" {
+		return false
+	}
+	return true
 }
