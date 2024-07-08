@@ -3,7 +3,6 @@ package service
 import (
 	"aion/model"
 	"fmt"
-	"time"
 )
 
 type RankService struct{}
@@ -23,7 +22,6 @@ func (r RankService) Run() error {
 	}
 	for _, v := range ranks {
 		_ = v.Save()
-		time.Sleep(time.Millisecond * 100)
 	}
 	return nil
 }

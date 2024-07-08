@@ -26,26 +26,6 @@ var (
 	regAttackC = regexp.MustCompile("(.*?)使用(.*?)技能")
 )
 
-var classSkills = map[int][]string{
-	model.JX: {"飞刀", "飞刀连射", "猛烈一击", "身体重击", "愤怒一击", "杀气破裂", "吸血波", "地震波动", "冲击波动", "激怒爆炸",
-		"剑气波动", "剑气破裂", "杀气波动", "强制捆绑", "下刺", "最后一击", "腾空斩击", "生存姿态", "集中格挡", "翅膀强化", "突击姿态", "愤怒波动"},
-	model.SH: {"主神的惩罚", "脚踝重击", "盾牌反击", "处决一击", "天雷斩", "主神惩罚", "审判", "集中捕获", "捕获", "精神破坏", "激昂",
-		"闪光斩", "保护之盾", "庇护之盔甲", "阻断之甲", "破坏之气合", "主神盔甲", "双重盔甲", "俘虏"},
-	model.SX: {"暗杀者步伐", "猛兽的咆哮", "绝魂斩", "反击", "影子下坠", "暗破", "暗袭", "灭杀", "猛兽之牙", "背后重击", "进击斩",
-		"短剑投掷", "神速契约", "命中之契约", "回避契约", "烟幕弹", "六感最大化", "强袭姿态", "影子步行", "进击斩"},
-	model.GX: {"利锥箭", "狙击", "疾风箭", "暴走箭", "连射", "套索箭", "强袭箭", "沉默箭", "狂风箭", "百发百中", "破灭箭", "祝福之弓",
-		"攻击之眼", "风之疾走", "猎人的决心"},
-	model.ZY: {"大地之怒", "大地的惩罚", "惩戒之电", "放电", "断罪一击", "惩戒", "闪电", "审判之电", "破灭之诉说", "灿烂之佑护",
-		"净化之光辉", "治疗保护膜", "不死之帐幕", "集中祈祷", "神速之祈祷", "免罪", "痊愈之闪光", "治疗之风", "苦行", "尤斯迪埃之光"},
-	model.HF: {"共鸣烟雾", "打击锁链", "必灭重击", "白热一击", "暗击锁", "流星一击", "灭火", "贯穿连锁", "铁壁之咒语",
-		"神速之咒语", "激怒之咒语", "鼓吹之咒语", "保护阵", "守护之祝福", "阻断之幕", "疾走之咒语"},
-	model.JL: {"吸引", "幽冥之苦痛", "愤怒之漩涡", "真空爆炸", "精灵弱化", "诅咒之云", "大地之锁链", "范围侵蚀", "魔法解除", "侵蚀",
-		"精神协调", "召唤:风之精灵"},
-	model.MD: {"火焰熔解", "混乱的咒语", "冬季的束缚", "冰河重击", "流星重击", "火焰爆发", "元气吸收", "台风重击", "冷气召唤", "暴风重击",
-		"火焰乱舞", "火焰叉", "结冰", "时空扭曲", "白杰尔的智慧", "神速的恩惠", "元素结界", "冰雪甲冑", "铁甲之恩惠", "魔力倍增"},
-	model.ZXZ: {"攻", "断", "击", "雷", "电击突袭", "爆雷打", "雷电大爆炸", "斩", "电流波动", "呼啸雷电", "电雷重击", "命运之执行者"},
-}
-
 const WorkerNum = 5
 
 type Parser struct {
@@ -57,11 +37,13 @@ type Parser struct {
 }
 
 func NewParseService() Parser {
+	playerSkill, err := model.PlayerSkill{}.GetAll()
+	if err != nil {
+		return Parser{}
+	}
 	skill2Class := make(map[string]model.Class)
-	for class, skills := range classSkills {
-		for _, skill := range skills {
-			skill2Class[skill] = class
-		}
+	for _, skill := range playerSkill {
+		skill2Class[skill.Skill] = skill.Class
 	}
 	return Parser{
 		lineChan:     make(chan string, 1000),
@@ -203,9 +185,10 @@ func (r *Parser) parseAttackA(line string) error {
 	if player == "" {
 		player = "我"
 	}
+	skill := match[2]
 	r.resultLog <- model.Log{
 		Player: player,
-		Skill:  match[2],
+		Skill:  skill,
 		Target: match[3],
 		Value:  formatDamage(match[4]),
 		Time:   formatTime(line),
@@ -213,7 +196,7 @@ func (r *Parser) parseAttackA(line string) error {
 	}
 	r.resultPlayer <- model.Player{
 		Name:  player,
-		Class: r.skill2Class[util.RemoveRomanNumber(match[2])],
+		Class: r.skill2Class[util.RemoveRomanNumber(skill)],
 		Time:  formatTime(line),
 	}
 	r.resultPlayer <- model.Player{
@@ -238,6 +221,7 @@ func (r *Parser) parseAttackB(line string) error {
 	}
 	r.resultLog <- model.Log{
 		Player: player,
+		Skill:  "普通攻击",
 		Target: match[2],
 		Value:  formatDamage(match[3]),
 		Time:   formatTime(line),
@@ -264,9 +248,16 @@ func (r *Parser) parseAttackC(line string) error {
 	if player == "" {
 		player = "我"
 	}
+	skill := match[2]
+	r.resultLog <- model.Log{
+		Player: player,
+		Skill:  skill,
+		Time:   formatTime(line),
+		RawMsg: line[22:],
+	}
 	r.resultPlayer <- model.Player{
 		Name:  player,
-		Class: r.skill2Class[util.RemoveRomanNumber(match[2])],
+		Class: r.skill2Class[util.RemoveRomanNumber(skill)],
 		Time:  formatTime(line),
 	}
 	return nil

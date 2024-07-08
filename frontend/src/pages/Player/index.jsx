@@ -160,7 +160,7 @@ class Player extends React.Component {
             allowClear
             showTime={{defaultValue: moment('00:00:00', 'HH:mm:ss')}}
             onChange={(d, ds) => this.query(d, ds)}
-            style={{ width: 400 }}
+            style={{ width: 300 }}
           />
         </Form.Item>
         <Form.Item label="玩家" name="name">
@@ -247,7 +247,7 @@ class Player extends React.Component {
     let result = []
     Object.keys(class2num).forEach(key => {
       result.push({
-        type: playerPros[key].name,
+        type: playerPros[key].name + ": " +class2num[key],
         value: class2num[key]
       });
     })
@@ -284,8 +284,8 @@ class Player extends React.Component {
       label: {
         text: 'type',
         position: 'inside',
-        formatter: function (text, datum, index, data ) {
-          return `${text}: ${datum.value}`
+        formatter: (text, datum, index, data) => {
+          return text.split(":")[0]
         }
       },
       legend: {
@@ -293,7 +293,7 @@ class Player extends React.Component {
         color: {
           position: 'right',
           rowPadding: 3,
-        },
+        }
       },
       tooltip: (
         d, // 每一个数据项
@@ -301,7 +301,7 @@ class Player extends React.Component {
         data, // 完整数据
         column, // 通道
       ) => ({
-        value: `占比:${(d.value/(statData.tian+statData.mo)*100).toFixed(0)}%`,
+        value: `人数:${d.value},占比:${(d.value/(statData.tian+statData.mo)*100).toFixed(0)}%`,
       })
     };
     return (
@@ -311,14 +311,17 @@ class Player extends React.Component {
             <Col span={8}>
               <Card title="种族">
                 <Row gutter={24}>
-                  <Col span={8}>
+                  <Col span={6}>
                     <Statistic title="总数" value={statData.tian+statData.mo} style={{padding: "12px"}} valueStyle={{color: "red"}}/>
                   </Col>
-                  <Col span={8}>
+                  <Col span={6}>
                     <Statistic title="天族" value={statData.tian} style={{padding: "12px"}} valueStyle={{color: "green"}}/>
                   </Col>
-                  <Col span={8}>
+                  <Col span={6}>
                     <Statistic title="魔族" value={statData.mo} style={{padding: "12px"}} valueStyle={{color: "blue"}}/>
+                  </Col>
+                  <Col span={6}>
+                    <Statistic title="其它" value={statData.other} style={{padding: "12px"}} valueStyle={{color: "grey"}}/>
                   </Col>
                 </Row>
               </Card>
@@ -351,6 +354,7 @@ class Player extends React.Component {
                 pagination={{
                   defaultPageSize: 20,
                   hideOnSinglePage: true,
+                  pageSizeOptions:['50', '100', '200', '500'],
                   showTotal: (total) => `共${total}条记录`,
                 }}
                 loading={loading}

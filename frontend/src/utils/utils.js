@@ -23,7 +23,7 @@ export const isAntDesignProOrDev = () => {
 export const getPageQuery = () => parse(window.location.href.split('?')[1]);
 
 export const playerPros = [
-  {name: "未知", logo: "unknown.png"},
+  {name: "其它", logo: "unknown.png"},
   {name: "剑星", logo: "jx.png"},
   {name: "守护", logo: "sh.png"},
   {name: "杀星", logo: "sx.png"},

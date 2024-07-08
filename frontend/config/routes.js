@@ -28,16 +28,16 @@ export default [
                 component: './Player',
               },
               {
-                name: '诸神黄昏',
-                icon: 'LockOutlined',
-                path: '/rank',
-                component: './Rank',
-              },
-              {
                 name: '日志列表',
                 icon: 'table',
                 path: '/log',
                 component: './Log',
+              },
+              {
+                name: '诸神黄昏',
+                icon: 'LockOutlined',
+                path: '/rank',
+                component: './Rank',
               },
               {
                 component: './404',

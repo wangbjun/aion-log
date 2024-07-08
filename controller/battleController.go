@@ -34,6 +34,7 @@ func (r battleController) GetAll(ctx *gin.Context) {
 		queryTarget, _   = ctx.GetQuery("target")
 		querySkill, _    = ctx.GetQuery("skill")
 		sort, _          = ctx.GetQuery("sort")
+		value, _         = ctx.GetQuery("value")
 	)
 	page, err := strconv.Atoi(queryPage)
 	if err != nil {
@@ -43,7 +44,7 @@ func (r battleController) GetAll(ctx *gin.Context) {
 	if err != nil || pageSize < 0 || pageSize > 1000 {
 		pageSize = 1000
 	}
-	data, count, err := model.Log{}.GetAll(st, et, page, pageSize, queryPlayer, queryTarget, querySkill, sort)
+	data, count, err := model.Log{}.GetAll(st, et, page, pageSize, queryPlayer, queryTarget, querySkill, sort, value)
 	if err != nil {
 		r.Failed(ctx, Failed, err.Error())
 		return
@@ -59,13 +60,16 @@ func (r battleController) GetAll(ctx *gin.Context) {
 	}
 	var results []LogResult
 	for _, v := range data {
-		results = append(results, LogResult{
+		result := LogResult{
 			Log:         v,
 			PlayerType:  playerMap[v.Player].Type,
 			PlayerClass: playerMap[v.Player].Class,
-			TargetType:  playerMap[v.Target].Type,
-			TargetClass: playerMap[v.Target].Class,
-		})
+		}
+		if playerMap[v.Target] != nil {
+			result.TargetType = playerMap[v.Target].Type
+			result.TargetClass = playerMap[v.Target].Class
+		}
+		results = append(results, result)
 	}
 	r.Success(ctx, "ok", map[string]interface{}{"list": results, "total": count})
 }
@@ -120,7 +124,7 @@ func (r battleController) GetPlayers(ctx *gin.Context) {
 	}
 	var result []skillCount
 	skillCountSql := "select player,count(1) count from (select player from aion_player_battle_log " +
-		"where skill != '' group by player,skill,time) t1 group by t1.player"
+		"where skill != '' and skill != '普通攻击' group by player,skill,time) t1 group by t1.player"
 	err = model.DB().Raw(skillCountSql).Scan(&result).Error
 	if err != nil {
 		r.Failed(ctx, Failed, err.Error())

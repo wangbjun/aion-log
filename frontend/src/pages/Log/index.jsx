@@ -30,13 +30,14 @@ class Log extends React.Component {
         title: "时间",
         dataIndex: 'time',
         key: 'time',
-        width: 180,
+        width: "10%",
         render: this.renderTime
       },
       {
         title: "玩家",
         dataIndex: 'player',
         key: 'player',
+        width: "18%",
         render: function (value, row) {
           let color = "grey"
           let typeName = ""
@@ -57,7 +58,11 @@ class Log extends React.Component {
         title: "对象",
         dataIndex: 'target',
         key: 'target',
+        width: "18%",
         render: function (value, row) {
+          if (!value) {
+            return <div>{value}</div>;
+          }
           let color = "grey"
           let typeName = ""
           if (row.target_type === 1) {
@@ -77,12 +82,13 @@ class Log extends React.Component {
         title: "伤害",
         dataIndex: 'value',
         key: 'value',
-        width: 50,
+        width: "6%",
       },
       {
         title: "原始日志",
         dataIndex: 'raw_msg',
         key: 'raw_msg',
+        width: "50%",
         render: function (value, row) {
           if (value.indexOf("打倒了。") !== -1 || value.indexOf("攻击而终结。") !== -1) {
             return <div style={{color: "deeppink"}}>{value}</div>;
@@ -135,6 +141,7 @@ class Log extends React.Component {
     let player = fieldValue.player && fieldValue.player.trim()
     let target = fieldValue.target && fieldValue.target.trim()
     let skill = fieldValue.skill && fieldValue.skill.trim()
+    let value = fieldValue.value && fieldValue.value.trim()
     const {page, pageSize} = this.state
     dispatch({
       type: 'global/fetchLogList',
@@ -143,7 +150,7 @@ class Log extends React.Component {
         pageSize,
         st: ds && ds[0] || st,
         et: ds && ds[1] || et,
-        player, target, skill,
+        player, target, skill,value,
         sort: fieldValue.sort
       },
     });
@@ -182,7 +189,7 @@ class Log extends React.Component {
             allowClear
             showTime={{defaultValue: moment('00:00:00', 'HH:mm:ss')}}
             onChange={(d, ds) => this.query(d, ds)}
-            style={{ width: 400 }}
+            style={{ width: 300 }}
           />
         </Form.Item>
         <Form.Item label="技能" name="skill">
@@ -193,6 +200,9 @@ class Log extends React.Component {
         </Form.Item>
         <Form.Item label="对象" name="target">
           <Input allowClear placeholder="请输入" style={{ width: 150 }}/>
+        </Form.Item>
+        <Form.Item label="伤害大于" name="value">
+          <Input allowClear placeholder="请输入" style={{ width: 100 }}/>
         </Form.Item>
         <Form.Item label="排序" name="sort">
           <Select
