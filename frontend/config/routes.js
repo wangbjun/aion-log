@@ -23,18 +23,18 @@ export default [
             routes: [
               {
                 path: '/',
-                name: '极乐世界',
+                name: '卡多尔',
                 icon: 'smile',
                 component: './Player',
               },
               {
-                name: '日志列表',
+                name: 'AION',
                 icon: 'table',
                 path: '/log',
                 component: './Log',
               },
               {
-                name: '诸神黄昏',
+                name: '封神榜',
                 icon: 'LockOutlined',
                 path: '/rank',
                 component: './Rank',

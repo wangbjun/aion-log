@@ -32,7 +32,7 @@ class Log extends React.Component {
         dataIndex: 'player',
         key: 'player',
         width: "16%",
-        render: function (value, row) {
+        render: (value, row) => {
           let color = "grey"
           let typeName = ""
           if (row.player_type === 1) {
@@ -46,7 +46,8 @@ class Log extends React.Component {
             typeName = "其它"
           }
           return <div><Tag className="custom-tag" color={color}>{typeName}</Tag><Tag
-            className="custom-tag">{playerPros[row.player_class].name}</Tag><span>{value}</span></div>
+            className="custom-tag">{playerPros[row.player_class].name}</Tag><span>
+            <a onClick={() => this.searchPlayer(row)}>{value}</a></span></div>
         }
       },
       {
@@ -75,7 +76,7 @@ class Log extends React.Component {
         }
       },
       {
-        title: "伤害",
+        title: "数值",
         dataIndex: 'value',
         key: 'value',
         width: "6%",
@@ -85,7 +86,9 @@ class Log extends React.Component {
         dataIndex: 'time',
         key: 'time',
         width: "10%",
-        render: this.renderTime
+        render: (value, row) => {
+          return moment(value).format("YYYY-MM-DD HH:mm:ss")
+        }
       },
       {
         title: "原始日志",
@@ -112,11 +115,6 @@ class Log extends React.Component {
     ];
   }
 
-  renderTime = (value, row) => {
-    const time = moment(value).format("YYYY-MM-DD HH:mm:ss")
-    return (<a onClick={() => this.searchTime(row)}>{time}</a>)
-  }
-
   componentDidMount() {
     const parsedUrlQuery = parse(window.location.href.split('?')[1]);
     let param = parsedUrlQuery.player
@@ -129,8 +127,8 @@ class Log extends React.Component {
     this.query().then()
   }
 
-  async searchTime(row) {
-    await this.formRef.current.setFieldsValue({time: [moment(row.time), moment(row.time)], player: row.player})
+  async searchPlayer(row) {
+    await this.formRef.current.setFieldsValue({player: row.player})
     await this.setState({page: 1})
     this.props.history.push("/log?player=" + row.player)
     this.query().then()
@@ -186,13 +184,14 @@ class Log extends React.Component {
             ranges={{
               今天: [moment().startOf('day'), moment().endOf('day')],
               昨天: [moment().subtract(1, 'day').startOf('day'), moment().subtract(1, 'day').endOf('day')],
+              前天: [moment().subtract(2, 'day').startOf('day'), moment().subtract(2, 'day').endOf('day')],
               最近3天: [moment().subtract(2, 'day').startOf('day'), moment().endOf('day')],
               最近7天: [moment().subtract(6, 'day').startOf('day'), moment().endOf('day')],
             }}
             allowClear
             showTime={{defaultValue: moment('00:00:00', 'HH:mm:ss')}}
             onChange={(d, ds) => this.query(d, ds)}
-            style={{width: 300}}
+            style={{width: 400}}
           />
         </Form.Item>
         <Form.Item label="技能" name="skill">
@@ -204,14 +203,14 @@ class Log extends React.Component {
         <Form.Item label="对象" name="target">
           <Input allowClear placeholder="请输入" style={{width: 150}}/>
         </Form.Item>
-        <Form.Item label="伤害大于" name="value">
-          <Input allowClear placeholder="请输入" style={{width: 100}}/>
+        <Form.Item label="数值" name="value">
+          <Input allowClear placeholder="大于" style={{width: 100}}/>
         </Form.Item>
         <Form.Item label="排序" name="sort">
           <Select
             allowClear
             showSearch
-            placeholder="请选择排序"
+            placeholder="请选择"
             optionFilterProp="children"
             filterOption={(input, option) =>
               option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
@@ -220,7 +219,7 @@ class Log extends React.Component {
             style={{width: 100}}
           >
             <Option value="time">时间</Option>
-            <Option value="value">伤害</Option>
+            <Option value="value">数值</Option>
             <Option value="skill">技能</Option>
             <Option value="player">玩家</Option>
             <Option value="target">对象</Option>

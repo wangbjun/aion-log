@@ -1,17 +1,13 @@
 package util
 
 import (
-	"bytes"
 	"crypto/md5"
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
 	"github.com/google/uuid"
-	"golang.org/x/text/encoding/simplifiedchinese"
-	"golang.org/x/text/transform"
 	"hash"
 	"io"
-	"unicode"
 )
 
 const TimeFormat = "2006-01-02 15:04:05"
@@ -69,31 +65,4 @@ func GetUuidV4() string {
 		}
 	}
 	return ""
-}
-func isRomanChar(r rune) bool {
-	switch unicode.ToUpper(r) {
-	case 'I', 'V', 'X', ' ':
-		return true
-	}
-	return false
-}
-
-func RemoveRomanNumber(s string) string {
-	runes := []rune(s)
-	for i := len(runes) - 1; i >= 0; i-- {
-		if !isRomanChar(runes[i]) {
-			return string(runes[:i+1])
-		}
-	}
-	return ""
-}
-
-func IsGBK(data []byte) bool {
-	reader := transform.NewReader(bytes.NewReader(data), simplifiedchinese.GB18030.NewDecoder())
-	_, err := io.ReadAll(reader)
-	return err == nil
-}
-
-func IsUTF8(data []byte) bool {
-	return bytes.Equal([]byte(data), data)
 }

@@ -38,10 +38,11 @@ func (r ChatLog) GetAll(st, et string, page, pageSize int, player, target, skill
 	if et != "" {
 		query = query.Where("time <= ?", et)
 	}
-	if player != "" {
+	if player != "" && target != "" {
+		query = query.Where("player = ? or target = ?", player, player)
+	} else if player != "" {
 		query = query.Where("player = ?", player)
-	}
-	if target != "" {
+	} else if target != "" {
 		query = query.Where("target = ?", target)
 	}
 	if skill != "" {
@@ -60,23 +61,6 @@ func (r ChatLog) GetAll(st, et string, page, pageSize int, player, target, skill
 	}
 	err = query.Offset((page - 1) * pageSize).Limit(pageSize).Order(sort + " desc").Find(&results).Error
 	return results, count, err
-}
-
-var cacheData = make(map[string]int)
-
-func (r ChatLog) GetSkillCount(player string) int {
-	if cached, ok := cacheData[player]; ok {
-		return cached
-	}
-	var result []struct{ skill string }
-	sql := "select skill from aion_player_chat_log where skill not in ('','kill','killed') " +
-		"and value > 0 and player = '" + player + "'"
-	DB().Raw(sql).Find(&result)
-	count := len(result)
-	if count > 0 {
-		cacheData[player] = count
-	}
-	return count
 }
 
 func (r ChatLog) GetRanks() ([]Rank, error) {

@@ -2,16 +2,21 @@ package controller
 
 import (
 	"aion/model"
+	"aion/service"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"strconv"
 )
 
 type battleController struct {
 	Controller
+	cache *service.CacheService
 }
 
 var (
-	BattleController = battleController{}
+	BattleController = battleController{
+		cache: service.NewCacheService(),
+	}
 )
 
 type LogResult struct {
@@ -22,6 +27,7 @@ type LogResult struct {
 	TargetClass int `json:"target_class"`
 }
 
+// GetAll 获取所有日志
 func (r battleController) GetAll(ctx *gin.Context) {
 	var (
 		st, _            = ctx.GetQuery("st")
@@ -59,54 +65,46 @@ func (r battleController) GetAll(ctx *gin.Context) {
 	var results []LogResult
 	for _, v := range data {
 		result := LogResult{
-			ChatLog:     v,
-			PlayerType:  playerMap[v.Player].Type,
-			PlayerClass: playerMap[v.Player].Class,
+			ChatLog: v,
 		}
-		if playerMap[v.Target] != nil {
-			result.TargetType = playerMap[v.Target].Type
-			result.TargetClass = playerMap[v.Target].Class
+		if cached, ok := r.cache.GetPlayer(v.Player); ok {
+			result.PlayerType = cached.Type
+			result.PlayerClass = cached.Class
+		}
+		if cached, ok := r.cache.GetPlayer(v.Target); ok {
+			result.TargetType = cached.Type
+			result.TargetClass = cached.Class
 		}
 		results = append(results, result)
 	}
 	r.Success(ctx, "ok", map[string]interface{}{"list": results, "total": count})
 }
 
+// GetRank 获取封神榜
 func (r battleController) GetRank(ctx *gin.Context) {
 	var (
 		level, _ = ctx.GetQuery("level")
 	)
+	if cached, ok := r.cache.GetRank(level); ok {
+		r.Success(ctx, "ok", map[string]interface{}{"list": cached})
+		return
+	}
 	data, err := model.Rank{}.GetAll(level)
 	if err != nil {
 		r.Failed(ctx, Failed, err.Error())
 		return
 	}
-	var playerMap = make(map[string]*model.Player)
-	players, err := model.Player{}.GetAll()
-	if err != nil {
-		r.Failed(ctx, Failed, err.Error())
-		return
-	}
-	for _, v := range players {
-		playerMap[v.Name] = v
-	}
-	Log := model.ChatLog{}
+
 	for k, v := range data {
-		data[k].Type = playerMap[v.Player].Type
-		data[k].Class = playerMap[v.Player].Class
-		data[k].AllCounts = Log.GetSkillCount(v.Player)
+		if cached, ok := r.cache.GetPlayer(v.Player); ok {
+			data[k].Type = cached.Type
+			data[k].Class = cached.Class
+		}
 	}
 	r.Success(ctx, "ok", map[string]interface{}{"list": data})
 }
 
-type skillCount struct {
-	Player string
-	Target string
-	Count  int
-}
-
-var cachedData = make(map[string][]*model.Player)
-
+// GetPlayers 获取所有玩家
 func (r battleController) GetPlayers(ctx *gin.Context) {
 	var (
 		st, _ = ctx.GetQuery("st")
@@ -117,7 +115,7 @@ func (r battleController) GetPlayers(ctx *gin.Context) {
 		return
 	}
 	var key = "player_" + st + "_" + et
-	if cached, ok := cachedData[key]; ok {
+	if cached, ok := r.cache.GetPlayers(key); ok {
 		r.Success(ctx, "ok", map[string]interface{}{"list": cached})
 		return
 	}
@@ -128,28 +126,21 @@ func (r battleController) GetPlayers(ctx *gin.Context) {
 		return
 	}
 
-	allPlayers, err := model.Player{}.GetAll()
-	if err != nil {
-		r.Failed(ctx, Failed, err.Error())
-		return
-	}
-	name2Player := make(map[string]*model.Player)
-	for _, v := range allPlayers {
-		name2Player[v.Name] = v
-	}
-
 	for _, v := range players {
-		if existed, ok := name2Player[v.Name]; ok {
+		if existed, ok := r.cache.GetPlayer(v.Name); ok {
 			v.Id = existed.Id
 			v.Type = existed.Type
 			v.Class = existed.Class
 			v.Time = existed.Time
 		}
 	}
-
-	var result []skillCount
-	skillCountSql := "select player,count(1) count from (select player from aion_player_chat_log " +
-		"where skill not in ('','kill','killed') and time >= '" + st + "' AND time <= '" + et + "' group by player,skill,time) t1 group by t1.player"
+	var result []struct {
+		Player string
+		Target string
+		Count  int
+	}
+	skillCountSql := fmt.Sprintf("select player,count(DISTINCT skill, time) as count from aion_player_chat_log " +
+		"where skill not in ('','kill','killed') and time >= '" + st + "' AND time <= '" + et + "' group by player")
 	err = model.DB().Raw(skillCountSql).Find(&result).Error
 	if err != nil {
 		r.Failed(ctx, Failed, err.Error())
@@ -191,7 +182,7 @@ func (r battleController) GetPlayers(ctx *gin.Context) {
 	}
 
 	if len(players) > 0 {
-		cachedData[key] = players
+		r.cache.SetPlayers(key, players)
 	}
 	r.Success(ctx, "ok", map[string]interface{}{"list": players})
 }

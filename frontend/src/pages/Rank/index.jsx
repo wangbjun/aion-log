@@ -31,6 +31,7 @@ class Rank extends React.Component {
         title: "玩家",
         dataIndex: 'player',
         key: 'player',
+        width: "18%",
         sorter: function (a, b) {
           return a.player.localeCompare(b.player)
         },
@@ -69,18 +70,6 @@ class Rank extends React.Component {
         }
       },
       {
-        title: "技能占比",
-        dataIndex: 'rate',
-        key: 'rate',
-        width: '8%',
-        sorter: function (a, b) {
-          return a.rate - b.rate
-        },
-        render: function (value) {
-          return (value * 100).toFixed(1) + "%"
-        },
-      },
-      {
         title: "上榜次数",
         dataIndex: 'counts',
         key: 'counts',
@@ -91,7 +80,7 @@ class Rank extends React.Component {
         defaultSortOrder: "descend"
       },
       {
-        title: "上榜时间点(最近10个)",
+        title: "上榜时间点(最近12个)",
         dataIndex: 'times',
         key: 'times',
         width: '50%',
@@ -152,12 +141,6 @@ class Rank extends React.Component {
         }
       },
       {
-        title: "伤害",
-        dataIndex: 'value',
-        key: 'value',
-        width: 50
-      },
-      {
         title: "原始日志",
         dataIndex: 'raw_msg',
         key: 'raw_msg',
@@ -183,15 +166,11 @@ class Rank extends React.Component {
   }
 
   renderTimes = (value, row) => {
-    let times = value.split(',')
-    if (times.length > 10) {
-      times = times.slice(0, 10)
-    }
     return (
       <div>
         <div>
           {
-            times.map((v) => {
+            value.split(',').map((v) => {
               return (<Tag color="green" onClick={() => this.searchRank({time: v, player: row.player})} key={v}>
                 {moment(v).format("YYYY-MM-DD HH:mm:ss")}</Tag>)
             })

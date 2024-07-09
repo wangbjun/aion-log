@@ -27,17 +27,16 @@ func (r Rank) BatchInsert(items []Rank) error {
 }
 
 type RankResult struct {
-	Player    string `json:"player"`
-	Type      int    `json:"type"`
-	Class     int    `json:"class"`
-	Counts    int    `json:"counts"`
-	AllCounts int    `json:"all_counts"`
-	Times     string `json:"times"`
+	Player string `json:"player"`
+	Type   int    `json:"type"`
+	Class  int    `json:"class"`
+	Counts int    `json:"counts"`
+	Times  string `json:"times"`
 }
 
 func (r Rank) GetAll(level string) ([]RankResult, error) {
 	var results []RankResult
-	sql := "select player,SUBSTRING_INDEX(GROUP_CONCAT(time ORDER BY time desc),',',30) times, count(1) counts " +
+	sql := "select player,SUBSTRING_INDEX(GROUP_CONCAT(time ORDER BY time desc),',',12) times, count(1) counts " +
 		"from aion_player_rank where count = " + level
 	sql += " group by player HAVING counts >= 5"
 	err := DB().Raw(sql).Find(&results).Error

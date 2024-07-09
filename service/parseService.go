@@ -2,7 +2,6 @@ package service
 
 import (
 	"aion/model"
-	"aion/util"
 	"bufio"
 	"errors"
 	"fmt"
@@ -24,6 +23,7 @@ var (
 	regAttackA = regexp.MustCompile("(.*?)使用(.*?)技能，对(.*?)造成了(.*)的伤害")
 	regAttackB = regexp.MustCompile("(.*?)给(.*?)造成了(.*)的伤害")
 	regAttackC = regexp.MustCompile("(.*?)使用(.*?)技能，")
+	regValue   = regexp.MustCompile("(\\d{1,3}(,\\d{3})*)")
 )
 
 const WorkerNum = 5
@@ -133,9 +133,6 @@ func (r *Parser) processResult(wg *sync.WaitGroup) {
 			if !ok {
 				doneLog = true
 			} else {
-				if !isValid(chatLog.Player) {
-					continue
-				}
 				logItems = append(logItems, chatLog)
 				if len(logItems) > 500 {
 					model.ChatLog{}.BatchInsert(logItems)
@@ -146,9 +143,6 @@ func (r *Parser) processResult(wg *sync.WaitGroup) {
 			if !ok {
 				donePlayer = true
 			} else {
-				if !isValid(player.Name) {
-					continue
-				}
 				if existed, ok := r.uniquePlayer[player.Name]; ok {
 					if existed.Type == 0 {
 						existed.Type = player.Type
@@ -192,7 +186,7 @@ func (r *Parser) parseAttackA(line string) error {
 		skill  = match[2]
 	)
 
-	if !isValid(player) || !isValid(target) {
+	if !isPlayerValid(player) || !isTargetValid(target) {
 		return nil
 	}
 
@@ -200,13 +194,13 @@ func (r *Parser) parseAttackA(line string) error {
 		Player: player,
 		Skill:  skill,
 		Target: target,
-		Value:  formatDamage(match[4]),
+		Value:  formatValue(match[4]),
 		Time:   formatTime(line),
 		RawMsg: line[22:],
 	}
 	r.resultPlayer <- model.Player{
 		Name:  player,
-		Class: r.skill2Class[util.RemoveRomanNumber(skill)],
+		Class: r.skill2Class[skill],
 		Time:  formatTime(line),
 	}
 	r.resultPlayer <- model.Player{
@@ -231,7 +225,7 @@ func (r *Parser) parseAttackB(line string) error {
 		target = match[2]
 	)
 
-	if !isValid(player) || !isValid(target) {
+	if !isPlayerValid(player) || !isTargetValid(target) {
 		return nil
 	}
 
@@ -239,7 +233,7 @@ func (r *Parser) parseAttackB(line string) error {
 		Player: player,
 		Skill:  "attack",
 		Target: target,
-		Value:  formatDamage(match[3]),
+		Value:  formatValue(match[3]),
 		Time:   formatTime(line),
 		RawMsg: line[22:],
 	}
@@ -265,19 +259,26 @@ func (r *Parser) parseAttackC(line string) error {
 		player = strings.ReplaceAll(match[1], "致命一击！", "")
 		skill  = match[2]
 	)
-	if !isValid(player) {
+	if !isPlayerValid(player) {
 		return nil
+	}
+
+	value := 0
+	matchValue := regValue.FindStringSubmatch(line[22:])
+	if len(matchValue) > 1 {
+		value = formatValue(matchValue[1])
 	}
 
 	r.resultLog <- model.ChatLog{
 		Player: player,
 		Skill:  skill,
+		Value:  value,
 		Time:   formatTime(line),
 		RawMsg: line[22:],
 	}
 	r.resultPlayer <- model.Player{
 		Name:  player,
-		Class: r.skill2Class[util.RemoveRomanNumber(skill)],
+		Class: r.skill2Class[skill],
 		Time:  formatTime(line),
 	}
 	return nil
@@ -341,7 +342,7 @@ func (r *Parser) parseDeathC(line string) error {
 		target = match[2]
 	)
 
-	if !isValid(player) {
+	if !isPlayerValid(player) {
 		return nil
 	}
 
@@ -371,12 +372,28 @@ func formatTime(ts string) time.Time {
 	return tm
 }
 
-func formatDamage(ds string) int {
+func formatValue(ds string) int {
 	d, _ := strconv.Atoi(strings.ReplaceAll(ds, ",", ""))
 	return d
 }
 
-func isValid(name string) bool {
+var invalidPlayer = map[string]int{
+	"太古气息": 1, "地之气息": 1, "水之气息": 1, "旋风之气息": 1, "风之气息": 1, "高洁气息": 1, "神圣的气息": 1, "治愈之气息": 1,
+	"生命之气息": 1, "火之气息": 1, "深渊的气息": 1, "水之精灵": 1, "火之精灵": 1, "风之精灵": 1, "台风之精灵": 1, "地之精灵": 1,
+	"熔岩精灵": 1, "冰柱": 1, "召唤台风": 1, "高级攻城兵器": 1, "超大型连射炮": 1,
+}
+
+func isPlayerValid(name string) bool {
+	if name == "" {
+		return false
+	}
+	if _, ok := invalidPlayer[name]; ok {
+		return false
+	}
+	return true
+}
+
+func isTargetValid(name string) bool {
 	if name == "" {
 		return false
 	}

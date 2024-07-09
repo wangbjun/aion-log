@@ -42,6 +42,11 @@ func (r ClassifyService) Run() error {
 		return err
 	}
 
+	err = r.updateBright()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

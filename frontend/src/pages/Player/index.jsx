@@ -159,6 +159,7 @@ class Player extends React.Component {
             ranges={{
               今天: [moment().startOf('day'), moment().endOf('day')],
               昨天: [moment().subtract(1, 'day').startOf('day'), moment().subtract(1, 'day').endOf('day')],
+              前天: [moment().subtract(2, 'day').startOf('day'), moment().subtract(2, 'day').endOf('day')],
               最近3天: [moment().subtract(2, 'day').startOf('day'), moment().endOf('day')],
               最近7天: [moment().subtract(6, 'day').startOf('day'), moment().endOf('day')],
             }}
