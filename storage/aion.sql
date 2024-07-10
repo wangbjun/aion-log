@@ -1,4 +1,4 @@
-CREATE TABLE `aion_player_chat_log`
+CREATE TABLE `aion_chat_log`
 (
     `id`      int NOT NULL AUTO_INCREMENT,
     `player`  varchar(100) DEFAULT NULL,

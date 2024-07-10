@@ -52,7 +52,7 @@ const BasicLayout = (props) => {
     },
     visible
   } = props;
-  visible = sessionStorage.getItem("modalClose") !== "true"
+  visible = localStorage.getItem("modalClose") !== "true"
   const menuDataRef = useRef([]);
   // useEffect(() => {
   //   if (dispatch) {
@@ -128,7 +128,7 @@ const BasicLayout = (props) => {
         {children}
       </Authorized>
       <Modal visible={visible} onCancel={cancel} footer={null} title="友情提示" width="60%">
-        <div style={{fontSize: 17, color: "red"}}>
+        <div style={{fontSize: 15, color: "red"}}>
           <p>一、本站纯属个人兴趣爱好而建立！</p>
           <p>二、本站数据来源于本人游戏客户端，其原理类似咱们用的DPS水表工具，从Chatlog日志分析所得，完全绿色，无侵入游戏！</p>
           <p>三、Chalog日志只能记录本人角色100米范围内的战斗行为，所以本日志仅供参考，无法保证数据完整性！</p>

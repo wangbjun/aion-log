@@ -1,4 +1,4 @@
-import {queryLogList, queryPlayer, queryRankList} from "@/services/api";
+import {queryLogList, queryPlayer, queryRankList, queryTimeline} from "@/services/api";
 import {notification} from "antd";
 
 const GlobalModel = {
@@ -8,8 +8,7 @@ const GlobalModel = {
     logList: [],
     rankList: [],
     playerList: [],
-    stockList: [],
-    taskStatus: {}
+    timeline: {}
   },
   effects: {
     * fetchLogList({payload}, {call, put, select}) {
@@ -25,6 +24,19 @@ const GlobalModel = {
         },
       });
     },
+    * fetchTimeline({payload}, {call, put, select}) {
+      const result = yield call(queryTimeline, payload);
+      if (result.code !== 200) {
+        notification.error(result.msg);
+        return
+      }
+      yield put({
+        type: 'saveDefault',
+        payload: {
+          timeline: result.data,
+        },
+      });
+    },
     * fetchRankList({payload}, {call, put, select}) {
       const result = yield call(queryRankList, payload);
       if (result.code !== 200) {
@@ -33,7 +45,7 @@ const GlobalModel = {
         });
         return
       }
-      let list = result.data.list
+      let list = result.data
       if (payload.name) {
         list = list.filter(v => {
           return v.player.indexOf(payload.name) !== -1
@@ -62,7 +74,7 @@ const GlobalModel = {
         });
         return
       }
-      let list = result.data.list
+      let list = result.data
       if (payload.name) {
         list = list.filter(v => {
           return v.name.indexOf(payload.name) !== -1
@@ -92,7 +104,7 @@ const GlobalModel = {
           visible: false,
         },
       });
-      sessionStorage.setItem("modalClose", "true")
+      localStorage.setItem("modalClose", "true")
     }
   },
   reducers: {

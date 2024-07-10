@@ -6,10 +6,12 @@ import (
 	"strings"
 )
 
-type ClassifyService struct{}
+type ClassifyService struct {
+	CacheService
+}
 
 func NewClassifyService() *ClassifyService {
-	return &ClassifyService{}
+	return &ClassifyService{CacheService: *NewCacheService()}
 }
 
 var updateSql = []string{
@@ -18,13 +20,18 @@ var updateSql = []string{
 	"UPDATE aion_player_info SET type = 1 WHERE name like '%永恒之岛'",
 	"UPDATE aion_player_info SET type = 2 WHERE name like '%火之神殿'",
 	"UPDATE aion_player_info SET type = 2 WHERE name like '%傲世八星'",
-	"UPDATE aion_player_info SET type = 1 WHERE name in (select distinct player from aion_player_chat_log where " +
-		"target in('魔族上级守护神将','魔族结界膜生成师','魔族城门')) and class != 0",
-	"UPDATE aion_player_info SET type = 2 WHERE name in (select distinct player from aion_player_chat_log where " +
-		"target in('天族上级守护神将','天族结界膜生成师','天族城门')) and class != 0",
+	"UPDATE aion_player_info SET type = 1 WHERE name in (select distinct player from aion_chat_log where " +
+		"target in('魔族中级守护神将','魔族上级守护神将','魔族结界膜生成师','魔族城门')) and class != 0",
+	"UPDATE aion_player_info SET type = 2 WHERE name in (select distinct player from aion_chat_log where " +
+		"target in('天族中级守护神将','天族上级守护神将','天族结界膜生成师','天族城门')) and class != 0",
 }
 
 func (r ClassifyService) Run() error {
+	err := r.CacheService.Load()
+	if err != nil {
+		return err
+	}
+
 	for _, sql := range updateSql {
 		err := model.DB().Exec(sql).Error
 		if err != nil {
@@ -32,19 +39,25 @@ func (r ClassifyService) Run() error {
 		}
 	}
 
-	err := r.updateBright()
-	if err != nil {
-		return err
-	}
+	for i := 0; i < 2; i++ {
+		err = r.updateUnknown()
+		if err != nil {
+			return err
+		}
+		err = r.updateBright()
+		if err != nil {
+			return err
+		}
 
-	err = r.updateDark()
-	if err != nil {
-		return err
-	}
+		err = r.updateDark()
+		if err != nil {
+			return err
+		}
 
-	err = r.updateBright()
-	if err != nil {
-		return err
+		err = r.updateBright()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -54,7 +67,7 @@ func (r ClassifyService) updateBright() error {
 	var result []struct {
 		Id int
 	}
-	sql := "select id from aion_player_info where name in (select distinct(player) name from aion_player_chat_log " +
+	sql := "select id from aion_player_info where name in (select distinct(player) name from aion_chat_log " +
 		"where target in (select name from aion_player_info where type = 2)) and class != 0 and type = 0"
 
 	err := model.DB().Raw(sql).Scan(&result).Error
@@ -83,7 +96,7 @@ func (r ClassifyService) updateDark() error {
 	var result []struct {
 		Id int
 	}
-	sql := "select id from aion_player_info where name in (select distinct(player) name from aion_player_chat_log " +
+	sql := "select id from aion_player_info where name in (select distinct(player) name from aion_chat_log " +
 		"where target in (select name from aion_player_info where type = 1)) and class != 0 and type = 0"
 
 	err := model.DB().Raw(sql).Scan(&result).Error
@@ -106,4 +119,30 @@ func (r ClassifyService) updateDark() error {
 	}
 
 	return nil
+}
+
+func (r ClassifyService) updateUnknown() error {
+	var unknown []model.Player
+	err := model.DB().Raw("select name from aion_player_info where type =0 and class != 0").Scan(&unknown).Error
+	if err != nil {
+		return err
+	}
+	knownPlayers := make(map[string]*model.Player)
+	for _, player := range r.CacheService.cachePlayer {
+		seg := strings.Split(player.Name, "-")
+		if len(seg) == 2 {
+			knownPlayers[seg[0]] = player
+		}
+	}
+
+	for _, player := range unknown {
+		if existed, ok := knownPlayers[player.Name]; ok {
+			err = model.DB().Exec("update aion_player_info set type = ? where name = ?", existed.Type, player.Name).Error
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
 }

@@ -5,7 +5,7 @@ import {connect} from "@/.umi/plugin-dva/exports";
 import moment from "moment";
 import {Link} from 'umi';
 import {playerPros} from "@/utils/utils";
-import {Pie} from '@ant-design/plots';
+import * as echarts from 'echarts';
 import "./index.css"
 
 const {RangePicker} = DatePicker
@@ -108,14 +108,14 @@ class Player extends React.Component {
   }
 
   renderName = (value) => {
-    return <Link to={`/log?player=${value}`}>{value}</Link>
+    return <Link target="_blank" to={`/log?player=${value}`}>{value}</Link>
   }
 
   componentDidMount() {
     this.query()
   }
 
-  query = () => {
+  query = async () => {
     const {dispatch} = this.props
     const fieldValue = this.formRef.current.getFieldValue();
     let st = moment().subtract(6, 'day').startOf('day').format("YYYY-MM-DD HH:mm:ss")
@@ -124,7 +124,15 @@ class Player extends React.Component {
       st = fieldValue.time[0].format("YYYY-MM-DD HH:mm:ss")
       et = fieldValue.time[1].format("YYYY-MM-DD HH:mm:ss")
     }
-    dispatch({
+    await dispatch({
+      type: 'global/fetchTimeline',
+      payload: {
+        st, et,
+      }
+    });
+    this.initTimeline()
+
+    await dispatch({
       type: 'global/fetchPlayerList',
       payload: {
         st, et,
@@ -133,6 +141,7 @@ class Player extends React.Component {
         class: fieldValue.class
       }
     });
+    this.initPie();
   }
 
   onReset = () => {
@@ -219,28 +228,28 @@ class Player extends React.Component {
   }
 
   getStatData(data) {
-    let tian = 0;
+    let god = 0;
     let mo = 0;
     let other = 0;
-    data.forEach(v => {
+    data && data.forEach(v => {
       switch (v.type) {
         case 0:
           other++
           break
         case 1:
-          tian++
+          god++
           break
         case 2:
           mo++
           break
       }
     })
-    return {tian, mo, other}
+    return {god, mo, other}
   }
 
   getClassData(data) {
     let class2num = {};
-    data.forEach(v => {
+    data && data.forEach(v => {
       if (v.type === 0) {
         return
       }
@@ -253,7 +262,7 @@ class Player extends React.Component {
     let result = []
     Object.keys(class2num).forEach(key => {
       result.push({
-        type: playerPros[key].name + ": " + class2num[key],
+        name: playerPros[key].name + ": " + class2num[key],
         value: class2num[key]
       });
     })
@@ -277,56 +286,119 @@ class Player extends React.Component {
     return server2num
   }
 
+  initPie() {
+    try {
+      this.classPie = echarts.init(document.getElementById("classPie"))
+    }catch (e) {
+      console.log(e)
+      return
+    }
+    const {playerList} = this.props
+    const option = {
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b0}'
+      },
+      legend: {
+        orient: 'vertical',
+        left: 'right',
+        align: 'left'
+      },
+      series: [
+        {
+          name: '职业占比',
+          type: 'pie',
+          radius: '80%',
+          data: this.getClassData(playerList),
+          emphasis: {
+            itemStyle: {
+              shadowBlur: 10,
+              shadowOffsetX: 0,
+              shadowColor: 'rgba(0, 0, 0, 0.5)'
+            }
+          },
+          label: {
+            show: true,
+            position: 'inside',
+            formatter: '{d}%'
+          }
+        }
+      ]
+    }
+    this.classPie.setOption(option)
+  }
+
+  initTimeline() {
+    try {
+      this.timeline = echarts.init(document.getElementById("timeline"))
+    }catch (e) {
+      console.log(e)
+      return
+    }
+    const {timeline} = this.props
+    const option = {
+      grid: {
+        left: 60,
+        right: 60,
+        top: '10%'
+      },
+      dataZoom: [
+        {
+          type: 'inside'
+        },
+        {
+          type: 'slider'
+        }
+      ],
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'shadow'
+        },
+      },
+      xAxis: {
+        data: timeline.timeData,
+        silent: false,
+        splitLine: {
+          show: false
+        },
+        splitArea: {
+          show: false
+        }
+      },
+      yAxis: {
+        splitArea: {
+          show: false
+        }
+      },
+      series: [
+        {
+          type: "bar",
+          data: timeline.valueData,
+        }
+      ],
+    }
+    this.timeline.setOption(option)
+  }
+
   render() {
     const {playerList, loading} = this.props
     const statData = this.getStatData(playerList)
-    const classData = this.getClassData(playerList)
     const serverData = this.getServerData(playerList)
-    const config = {
-      data: classData,
-      height: 350,
-      angleField: 'value',
-      colorField: 'type',
-      label: {
-        text: 'type',
-        position: 'inside',
-        formatter: (text, datum, index, data) => {
-          const ratio = datum.value / (statData.tian + statData.mo)
-          if (ratio < 0.05) {
-            return ''
-          }
-          return text.split(":")[0]
-        }
-      },
-      legend: {
-        show: false,
-        color: {
-          position: 'right',
-          rowPadding: 3,
-        }
-      },
-      tooltip: (
-        d, // 每一个数据项
-        index, // 索引
-        data, // 完整数据
-        column, // 通道
-      ) => ({
-        value: `人数:${d.value},占比:${(d.value / (statData.tian + statData.mo) * 100).toFixed(0)}%`,
-      })
-    };
     return (
       <PageContainer>
         <Card extra={this.searchForm()}>
+          <div id="timeline" style={{height:'200px'}}/>
           <Row>
             <Col span={8}>
               <Card title="种族">
                 <Row gutter={24}>
                   <Col span={6}>
-                    <Statistic title="总数" value={statData.tian + statData.mo} style={{padding: "12px"}}
+                    <Statistic title="天魔总数" value={statData.god + statData.mo} style={{padding: "12px"}}
                                valueStyle={{color: "red"}}/>
                   </Col>
                   <Col span={6}>
-                    <Statistic title="天族" value={statData.tian} style={{padding: "12px"}}
+                    <Statistic title="天族" value={statData.god} style={{padding: "12px"}}
                                valueStyle={{color: "green"}}/>
                   </Col>
                   <Col span={6}>
@@ -339,12 +411,10 @@ class Player extends React.Component {
                 </Row>
               </Card>
               <Card title="职业">
-                <Row gutter={24}>
-                  {classData.length ? <Pie {...config} /> : <Empty/>}
-                </Row>
+                <div id="classPie" style={{height: '400px'}}/>
               </Card>
               <Card title="区服">
-                <Row gutter={24}>
+              <Row gutter={24}>
                   {
                     Array.from(serverData.entries()).map((v, k) => {
                       return <Col span={6} key={k}>

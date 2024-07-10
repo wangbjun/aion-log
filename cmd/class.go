@@ -13,11 +13,8 @@ var classCmd = &cobra.Command{
 	Use:   "class",
 	Short: "Classify Player Info",
 	Run: func(cmd *cobra.Command, args []string) {
-		classify := service.NewClassifyService()
-		err := classify.Run()
-		if err != nil {
-			cmd.PrintErrln(err)
-			return
-		}
+		service.NewClassifyService().Run()
+		service.NewRankService().Run()
+		service.NewTimelineService().Run()
 	},
 }

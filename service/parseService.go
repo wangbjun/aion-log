@@ -17,16 +17,16 @@ import (
 )
 
 var (
-	regDeathA  = regexp.MustCompile("(.*?)把(.*?)打倒了。")
-	regDeathB  = regexp.MustCompile("(.*?)倒下了。")
-	regDeathC  = regexp.MustCompile("(.*?)受到(.*?)的攻击而终结。")
-	regAttackA = regexp.MustCompile("(.*?)使用(.*?)技能，对(.*?)造成了(.*)的伤害")
-	regAttackB = regexp.MustCompile("(.*?)给(.*?)造成了(.*)的伤害")
-	regAttackC = regexp.MustCompile("(.*?)使用(.*?)技能，")
+	regDeathA  = regexp.MustCompile("(\\S+)把(\\S+)打倒了。")
+	regDeathB  = regexp.MustCompile("(\\S+)倒下了。")
+	regDeathC  = regexp.MustCompile("(\\S+)受到(\\S+)的攻击而终结。")
+	regAttackA = regexp.MustCompile("(\\S+)使用(.+)技能，对(\\S+)造成了(\\S+)的伤害")
+	regAttackB = regexp.MustCompile("(\\S+)给(\\S+)造成了(\\S+)的伤害")
+	regAttackC = regexp.MustCompile("(\\S+)使用(.+)技能，")
 	regValue   = regexp.MustCompile("(\\d{1,3}(,\\d{3})*)")
 )
 
-const WorkerNum = 5
+const WorkerNum = 8
 
 type Parser struct {
 	lineChan     chan string
@@ -179,13 +179,11 @@ func (r *Parser) parseAttackA(line string) error {
 	if len(match) != 5 {
 		return errors.New("parseAttackB matches fail:" + line)
 	}
-
 	var (
 		player = strings.ReplaceAll(match[1], "致命一击！", "")
 		target = match[3]
 		skill  = match[2]
 	)
-
 	if !isPlayerValid(player) || !isTargetValid(target) {
 		return nil
 	}
@@ -213,6 +211,9 @@ func (r *Parser) parseAttackA(line string) error {
 // (.*?)给(.*?)造成了(.*)的伤害
 func (r *Parser) parseAttackB(line string) error {
 	if strings.Contains(line, "反弹了攻击") {
+		return nil
+	}
+	if strings.Count(line[22:], "给") >= 2 {
 		return nil
 	}
 	match := regAttackB.FindStringSubmatch(line[22:])
@@ -265,7 +266,7 @@ func (r *Parser) parseAttackC(line string) error {
 
 	value := 0
 	matchValue := regValue.FindStringSubmatch(line[22:])
-	if len(matchValue) > 1 {
+	if len(matchValue) > 1 && matchValue[1] != "1" {
 		value = formatValue(matchValue[1])
 	}
 
@@ -380,7 +381,7 @@ func formatValue(ds string) int {
 var invalidPlayer = map[string]int{
 	"太古气息": 1, "地之气息": 1, "水之气息": 1, "旋风之气息": 1, "风之气息": 1, "高洁气息": 1, "神圣的气息": 1, "治愈之气息": 1,
 	"生命之气息": 1, "火之气息": 1, "深渊的气息": 1, "水之精灵": 1, "火之精灵": 1, "风之精灵": 1, "台风之精灵": 1, "地之精灵": 1,
-	"熔岩精灵": 1, "冰柱": 1, "召唤台风": 1, "高级攻城兵器": 1, "超大型连射炮": 1,
+	"熔岩精灵": 1, "冰柱": 1, "召唤台风": 1, "高级攻城兵器": 1, "超大型连射炮": 1, "大型连射炮": 1,
 }
 
 func isPlayerValid(name string) bool {

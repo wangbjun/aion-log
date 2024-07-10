@@ -22,6 +22,8 @@ class Log extends React.Component {
   state = {
     page: 1,
     pageSize: 50,
+    valueGe: "",
+    valueLe: ""
   }
 
   constructor(props) {
@@ -31,7 +33,7 @@ class Log extends React.Component {
         title: "玩家",
         dataIndex: 'player',
         key: 'player',
-        width: "16%",
+        width: "18%",
         render: (value, row) => {
           let color = "grey"
           let typeName = ""
@@ -54,7 +56,7 @@ class Log extends React.Component {
         title: "对象",
         dataIndex: 'target',
         key: 'target',
-        width: "16%",
+        width: "18%",
         render: function (value, row) {
           if (!value) {
             return <div>{value}</div>;
@@ -94,7 +96,7 @@ class Log extends React.Component {
         title: "原始日志",
         dataIndex: 'raw_msg',
         key: 'raw_msg',
-        width: "50%",
+        width: "46%",
         render: function (value, row) {
           if (row.skill === "kill" || row.skill === "killed") {
             return <div style={{color: "deeppink"}}>{value}</div>;
@@ -122,13 +124,13 @@ class Log extends React.Component {
       if (param.endsWith("#/")) {
         param = param.substring(0, param.lastIndexOf("#/"))
       }
-      this.formRef.current.setFieldsValue({player: param})
+      this.formRef.current.setFieldsValue({player: param, target: param})
     }
     this.query().then()
   }
 
   async searchPlayer(row) {
-    await this.formRef.current.setFieldsValue({player: row.player})
+    await this.formRef.current.setFieldsValue({player: row.player, target: row.player})
     await this.setState({page: 1})
     this.props.history.push("/log?player=" + row.player)
     this.query().then()
@@ -142,8 +144,8 @@ class Log extends React.Component {
     let player = fieldValue.player && fieldValue.player.trim()
     let target = fieldValue.target && fieldValue.target.trim()
     let skill = fieldValue.skill && fieldValue.skill.trim()
-    let value = fieldValue.value && fieldValue.value.trim()
-    const {page, pageSize} = this.state
+    const {page, pageSize, valueGe, valueLe} = this.state
+    console.log(valueGe, valueLe)
     dispatch({
       type: 'global/fetchLogList',
       payload: {
@@ -151,7 +153,8 @@ class Log extends React.Component {
         pageSize,
         st: ds && ds[0] || st,
         et: ds && ds[1] || et,
-        player, target, skill, value,
+        player, target, skill,
+        value: valueGe||valueLe ? valueGe+"-"+valueLe : "",
         sort: fieldValue.sort
       },
     });
@@ -163,6 +166,14 @@ class Log extends React.Component {
     this.props.history.push("/log")
     this.query().then()
   };
+
+  inputValue = async (e, type) => {
+    if (type === "a") {
+      await this.setState({valueGe: e.target.value})
+    } else if (type === "b") {
+      await this.setState({valueLe: e.target.value})
+    }
+  }
 
   searchForm() {
     const dateFormat = 'YYYY-MM-DD HH:mm:ss';
@@ -191,7 +202,7 @@ class Log extends React.Component {
             allowClear
             showTime={{defaultValue: moment('00:00:00', 'HH:mm:ss')}}
             onChange={(d, ds) => this.query(d, ds)}
-            style={{width: 400}}
+            style={{width: 300}}
           />
         </Form.Item>
         <Form.Item label="技能" name="skill">
@@ -204,7 +215,7 @@ class Log extends React.Component {
           <Input allowClear placeholder="请输入" style={{width: 150}}/>
         </Form.Item>
         <Form.Item label="数值" name="value">
-          <Input allowClear placeholder="大于" style={{width: 100}}/>
+          <Input allowClear placeholder=">=" style={{width: 70}} onChange={(e)=>this.inputValue(e, "a")}/> - <Input allowClear placeholder="<=" style={{width: 70}} onChange={(e)=>this.inputValue(e, "b")}/>
         </Form.Item>
         <Form.Item label="排序" name="sort">
           <Select

@@ -20,3 +20,11 @@ export async function queryPlayer(params) {
     method: "GET"
   });
 }
+
+export async function queryTimeline(params) {
+  return request('/api/v1/timeline', {
+    params,
+    method: "GET"
+  });
+}
+
