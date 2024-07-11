@@ -26,10 +26,7 @@ var (
 	regValue   = regexp.MustCompile("(\\d{1,3}(,\\d{3})*)")
 )
 
-const WorkerNum = 8
-
 type Parser struct {
-	lineChan     chan string
 	resultLog    chan model.ChatLog
 	resultPlayer chan model.Player
 	uniquePlayer map[string]model.Player
@@ -46,7 +43,6 @@ func NewParseService() Parser {
 		skill2Class[skill.Skill] = skill.Class
 	}
 	return Parser{
-		lineChan:     make(chan string, 1000),
 		resultLog:    make(chan model.ChatLog, 1000),
 		resultPlayer: make(chan model.Player, 1000),
 		uniquePlayer: make(map[string]model.Player, 1000),
@@ -61,16 +57,13 @@ func (r *Parser) Run(fileName string) error {
 	}
 	defer file.Close()
 
-	//启动worker
-	var wg sync.WaitGroup
-	var wg2 sync.WaitGroup
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	go r.processLog(&wg)
+	go r.processPlayer(&wg)
 
-	for i := 0; i < WorkerNum; i++ {
-		wg.Add(1)
-		go r.worker(&wg)
-	}
-	wg2.Add(1)
-	go r.processResult(&wg2)
+	st := time.Now()
+	log.Printf("begin proccess: %s", fileName)
 
 	decoder := simplifiedchinese.GBK.NewDecoder()
 	buff := bufio.NewReader(file)
@@ -79,98 +72,95 @@ func (r *Parser) Run(fileName string) error {
 		if err == io.EOF {
 			break
 		}
-		line, err := decoder.Bytes(a)
+		b, err := decoder.Bytes(a)
 		if err != nil {
 			log.Printf("decoder error: %s", err)
 			continue
 		}
-		text := string(line)
-		if len(line) == 0 {
+		if len(b) == 0 {
 			continue
 		}
-		r.lineChan <- text
-	}
-	close(r.lineChan)
-	wg.Wait()
-	close(r.resultLog)
-	close(r.resultPlayer)
-	wg2.Wait()
-	return nil
-}
-
-func (r *Parser) worker(wg *sync.WaitGroup) {
-	defer wg.Done()
-	for line := range r.lineChan {
-		var err error
-		if regAttackA.Match([]byte(line)) {
+		line := string(b)
+		if regAttackA.MatchString(line) {
 			err = r.parseAttackA(line)
-		} else if regAttackB.Match([]byte(line)) {
+		} else if regAttackB.MatchString(line) {
 			err = r.parseAttackB(line)
-		} else if regAttackC.Match([]byte(line)) {
+		} else if regAttackC.MatchString(line) {
 			err = r.parseAttackC(line)
-		} else if regDeathA.Match([]byte(line)) {
+		} else if regDeathA.MatchString(line) {
 			err = r.parseDeathA(line)
-		} else if regDeathB.Match([]byte(line)) {
+		} else if regDeathB.MatchString(line) {
 			err = r.parseDeathB(line)
-		} else if regDeathC.Match([]byte(line)) {
+		} else if regDeathC.MatchString(line) {
 			err = r.parseDeathC(line)
 		}
 		if err != nil {
 			fmt.Printf("parse line error: %s\n", err)
 		}
 	}
+	close(r.resultLog)
+	close(r.resultPlayer)
+	wg.Wait()
+
+	log.Printf("finish proccess: %s, cost: %.2fs\n", fileName, time.Since(st).Seconds())
+	return nil
 }
 
-func (r *Parser) processResult(wg *sync.WaitGroup) {
+func (r *Parser) processLog(wg *sync.WaitGroup) {
 	defer wg.Done()
-	doneLog := false
-	donePlayer := false
-
-	var logItems []model.ChatLog
+	logItems := make([]model.ChatLog, 0, 500)
+	model.ChatLog{}.RemoveIndex()
 	for {
-		select {
-		case chatLog, ok := <-r.resultLog:
-			if !ok {
-				doneLog = true
-			} else {
-				logItems = append(logItems, chatLog)
-				if len(logItems) > 500 {
-					model.ChatLog{}.BatchInsert(logItems)
-					logItems = []model.ChatLog{}
-				}
-			}
-		case player, ok := <-r.resultPlayer:
-			if !ok {
-				donePlayer = true
-			} else {
-				if existed, ok := r.uniquePlayer[player.Name]; ok {
-					if existed.Type == 0 {
-						existed.Type = player.Type
-					}
-					if existed.Class == 0 {
-						existed.Class = player.Class
-					}
-					existed.Time = player.Time
-					r.uniquePlayer[player.Name] = existed
-				} else {
-					r.uniquePlayer[player.Name] = player
-				}
-			}
+		chatLog, ok := <-r.resultLog
+		if !ok {
+			break
 		}
-		if doneLog && donePlayer {
-			model.ChatLog{}.BatchInsert(logItems)
-			var result []model.Player
-			for _, player := range r.uniquePlayer {
-				result = append(result, player)
-				if len(result) > 500 {
-					model.Player{}.BatchInsert(result)
-					result = make([]model.Player, 0)
-				}
+		logItems = append(logItems, chatLog)
+		if len(logItems) >= 500 {
+			err := model.ChatLog{}.BatchInsert(logItems)
+			if err != nil {
+				log.Printf("batch insert log error: %s", err)
 			}
-			model.Player{}.BatchInsert(result)
-			return
+			logItems = make([]model.ChatLog, 0, 500)
 		}
 	}
+	model.ChatLog{}.BatchInsert(logItems)
+	model.ChatLog{}.AddIndex()
+}
+
+func (r *Parser) processPlayer(wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	for {
+		player, ok := <-r.resultPlayer
+		if !ok {
+			break
+		}
+		if existed, ok := r.uniquePlayer[player.Name]; ok {
+			if existed.Type == 0 {
+				existed.Type = player.Type
+			}
+			if existed.Class == 0 {
+				existed.Class = player.Class
+			}
+			existed.Time = player.Time
+			r.uniquePlayer[player.Name] = existed
+		} else {
+			r.uniquePlayer[player.Name] = player
+		}
+	}
+	var result []model.Player
+	for _, player := range r.uniquePlayer {
+		result = append(result, player)
+		if len(result) >= 500 {
+			err := model.Player{}.BatchInsert(result)
+			if err != nil {
+				log.Printf("batch insert player error: %s", err)
+			}
+			result = make([]model.Player, 0, 500)
+		}
+	}
+	model.Player{}.BatchInsert(result)
 }
 
 // (.*?)使用(.*?)技能，对(.*?)造成了(.*)的伤害
@@ -398,7 +388,7 @@ func isTargetValid(name string) bool {
 	if name == "" {
 		return false
 	}
-	if name == "训练用稻草人" {
+	if name == "训练用稻草人" || name == "变异的RA-98c" {
 		return false
 	}
 	return true

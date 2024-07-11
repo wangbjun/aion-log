@@ -6,7 +6,7 @@ import moment from "moment";
 import {Link} from 'umi';
 import {playerPros} from "@/utils/utils";
 import * as echarts from 'echarts';
-import "./index.css"
+import "../../global.less"
 
 const {RangePicker} = DatePicker
 const {Option} = Select
@@ -142,6 +142,7 @@ class Player extends React.Component {
       }
     });
     this.initPie();
+    this.initServerPie();
   }
 
   onReset = () => {
@@ -270,25 +271,34 @@ class Player extends React.Component {
   }
 
   getServerData(data) {
-    let server2num = new Map();
-    data.forEach(v => {
+    let server2num = {};
+    data && data.forEach(v => {
       const parts = v.name.split("-");
       if (parts.length !== 2) {
         return
       }
       let serverName = parts[1]
-      if (server2num.has(serverName)) {
-        server2num.set(serverName, server2num.get(serverName) + 1);
+      if (server2num[serverName]) {
+        server2num[serverName] = server2num[serverName] + 1;
       } else {
-        server2num.set(serverName, 1);
+        server2num[serverName] = 1;
       }
-    });
-    return server2num
+    })
+      let result = []
+      Object.keys(server2num).forEach(key => {
+        result.push({
+          name: key,
+          value: server2num[key]
+        });
+      })
+      return result
   }
 
   initPie() {
     try {
-      this.classPie = echarts.init(document.getElementById("classPie"))
+      if (!this.classPie) {
+        this.classPie = echarts.init(document.getElementById("classPie"))
+      }
     }catch (e) {
       console.log(e)
       return
@@ -306,9 +316,8 @@ class Player extends React.Component {
       },
       series: [
         {
-          name: '职业占比',
           type: 'pie',
-          radius: '80%',
+          radius: '90%',
           data: this.getClassData(playerList),
           emphasis: {
             itemStyle: {
@@ -328,8 +337,54 @@ class Player extends React.Component {
     this.classPie.setOption(option)
   }
 
+  initServerPie() {
+    try {
+      if (!this.serverPie) {
+        this.serverPie = echarts.init(document.getElementById("serverPie"))
+      }
+    }catch (e) {
+      console.log(e)
+      return
+    }
+    const {playerList} = this.props
+    const option = {
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b0}'
+      },
+      legend: {
+        orient: 'vertical',
+        left: 'right',
+        align: 'left'
+      },
+      series: [
+        {
+          type: 'pie',
+          radius: '90%',
+          data: this.getServerData(playerList),
+          emphasis: {
+            itemStyle: {
+              shadowBlur: 10,
+              shadowOffsetX: 0,
+              shadowColor: 'rgba(0, 0, 0, 0.5)'
+            }
+          },
+          label: {
+            show: true,
+            position: 'inside',
+            formatter: '{d}%'
+          }
+        }
+      ]
+    }
+    this.serverPie.setOption(option)
+  }
+
   initTimeline() {
     try {
+      if (this.timeline) {
+        echarts.dispose(this.timeline)
+      }
       this.timeline = echarts.init(document.getElementById("timeline"))
     }catch (e) {
       console.log(e)
@@ -340,16 +395,17 @@ class Player extends React.Component {
       grid: {
         left: 60,
         right: 60,
-        top: '10%'
+        top: '10%',
+        bottom: '20%'
       },
-      dataZoom: [
-        {
-          type: 'inside'
-        },
-        {
-          type: 'slider'
-        }
-      ],
+      toolbox: {
+        feature: {
+          dataZoom: {
+            yAxisIndex: 'none'
+          },
+          restore: {}
+          }
+      },
       tooltip: {
         trigger: 'axis',
         axisPointer: {
@@ -378,51 +434,50 @@ class Player extends React.Component {
         }
       ],
     }
+    this.timeline.on('datazoom', (params) => {
+      let start = params.batch && params.batch[0].startValue
+      let end = params.batch && params.batch[0].endValue
+
+      let startTime = timeline.timeData && timeline.timeData[start]
+      let endTime = timeline.timeData && timeline.timeData[end]
+      if (startTime && endTime) {
+        this.formRef.current.setFieldsValue({time: [moment(startTime),moment(endTime)]})
+        this.query()
+      }
+    })
     this.timeline.setOption(option)
   }
 
   render() {
     const {playerList, loading} = this.props
     const statData = this.getStatData(playerList)
-    const serverData = this.getServerData(playerList)
     return (
       <PageContainer>
-        <Card extra={this.searchForm()}>
+        <Card extra={this.searchForm()} >
           <div id="timeline" style={{height:'200px'}}/>
           <Row>
             <Col span={8}>
               <Card title="种族">
                 <Row gutter={24}>
                   <Col span={6}>
-                    <Statistic title="天魔总数" value={statData.god + statData.mo} style={{padding: "12px"}}
-                               valueStyle={{color: "red"}}/>
+                    <Statistic title="天魔总数" value={statData.god + statData.mo} style={{padding: "12px"}} valueStyle={{color: "red"}}/>
                   </Col>
                   <Col span={6}>
-                    <Statistic title="天族" value={statData.god} style={{padding: "12px"}}
-                               valueStyle={{color: "green"}}/>
+                    <Statistic title="天族" value={statData.god} style={{padding: "12px"}} valueStyle={{color: "green"}}/>
                   </Col>
                   <Col span={6}>
                     <Statistic title="魔族" value={statData.mo} style={{padding: "12px"}} valueStyle={{color: "blue"}}/>
                   </Col>
                   <Col span={6}>
-                    <Statistic title="其它" value={statData.other} style={{padding: "12px"}}
-                               valueStyle={{color: "grey"}}/>
+                    <Statistic title="其它" value={statData.other} style={{padding: "12px"}} valueStyle={{color: "grey"}}/>
                   </Col>
                 </Row>
               </Card>
-              <Card title="职业">
-                <div id="classPie" style={{height: '400px'}}/>
+              <Card title="职业分布">
+                <div id="classPie" style={{height: '300px'}}/>
               </Card>
-              <Card title="区服">
-              <Row gutter={24}>
-                  {
-                    Array.from(serverData.entries()).map((v, k) => {
-                      return <Col span={6} key={k}>
-                        <Statistic title={v[0]} value={v[1]} style={{padding: "12px"}} valueStyle={{color: "green"}}/>
-                      </Col>
-                    })
-                  }
-                </Row>
+              <Card title="区服分布">
+                <div id="serverPie" style={{height: '300px'}}/>
               </Card>
             </Col>
             <Col span={16}>

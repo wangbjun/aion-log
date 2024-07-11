@@ -21,7 +21,7 @@ func (r TimelineService) Run() error {
 	if err != nil {
 		return fmt.Errorf("clean table error:" + err.Error())
 	}
-	sql := "select from_unixtime(floor(unix_timestamp(time) / 10) * 10) as tb, sum(count) as value from (" +
+	sql := "select from_unixtime(floor(unix_timestamp(time) / 3) * 3) as tb, sum(count) as value from (" +
 		"select time, count(1) as count from ( select time from aion_chat_log where target != '' and skill != 'attack' " +
 		"and value > 0 group by time, skill) t1 group by time) t2 group by tb order by tb"
 	err = model.DB().Raw(sql).Scan(&result).Error

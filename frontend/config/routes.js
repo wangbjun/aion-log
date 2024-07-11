@@ -28,7 +28,7 @@ export default [
                 component: './Player',
               },
               {
-                name: 'AION',
+                name: '普埃塔',
                 icon: 'table',
                 path: '/log',
                 component: './Log',

@@ -48,12 +48,10 @@ func (r ClassifyService) Run() error {
 		if err != nil {
 			return err
 		}
-
 		err = r.updateDark()
 		if err != nil {
 			return err
 		}
-
 		err = r.updateBright()
 		if err != nil {
 			return err

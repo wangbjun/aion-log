@@ -98,3 +98,20 @@ func (r ChatLog) GetRanks() ([]Rank, error) {
 		return results, nil
 	}
 }
+
+func (r ChatLog) AddIndex() error {
+	return DB().Exec("ALTER TABLE `aion_chat_log` " +
+		"ADD KEY `idx_player_skill_time` (`player`,`skill`,`time`)," +
+		"ADD KEY `idx_skill` (`skill`)," +
+		"ADD KEY `idx_time` (`time`)," +
+		"ADD KEY `idx_target` (`target`)," +
+		"ADD KEY `idx_value` (`value`)").Error
+}
+
+func (r ChatLog) RemoveIndex() error {
+	DB().Exec("drop index idx_player_skill_time on aion_chat_log")
+	DB().Exec("drop index idx_skill on aion_chat_log")
+	DB().Exec("drop index idx_target on aion_chat_log")
+	DB().Exec("drop index idx_time on aion_chat_log")
+	return DB().Exec("drop index idx_value on aion_chat_log").Error
+}

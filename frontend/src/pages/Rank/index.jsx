@@ -4,7 +4,7 @@ import {PageContainer} from '@ant-design/pro-layout';
 import {connect} from "@/.umi/plugin-dva/exports";
 import moment from "moment";
 import {Link} from "umi";
-import {playerPros} from "@/utils/utils";
+import {getTypeColor, playerPros} from "@/utils/utils";
 
 const {RangePicker} = DatePicker
 const {Option} = Select
@@ -95,68 +95,48 @@ class Rank extends React.Component {
         title: "时间",
         dataIndex: 'time',
         key: 'time',
-        width: 180,
+        width: 145,
         render: function (value) {
           return moment(value).format("YYYY-MM-DD HH:mm:ss")
-        }
-      },
-      {
-        title: "玩家",
-        dataIndex: 'player',
-        key: 'player',
-        render: function (value, row) {
-          let color = "grey"
-          let typeName = ""
-          if (row.player_type === 1) {
-            color = "green"
-            typeName = "天族"
-          } else if (row.player_type === 2) {
-            color = "blue"
-            typeName = "魔族"
-          } else if (row.player_type === 0) {
-            color = "orange"
-            typeName = "其它"
-          }
-          return <div><Tag className="custom-tag" color={color}>{typeName}</Tag><span>{value}</span></div>
-        }
-      },
-      {
-        title: "对象",
-        dataIndex: 'target',
-        key: 'target',
-        render: function (value, row) {
-          let color = "grey"
-          let typeName = ""
-          if (row.target_type === 1) {
-            color = "green"
-            typeName = "天族"
-          } else if (row.target_type === 2) {
-            color = "blue"
-            typeName = "魔族"
-          } else if (row.target_type === 0) {
-            color = "orange"
-            typeName = "其它"
-          }
-          return <span><Tag className="custom-tag" color={color}>{typeName}</Tag>{value}</span>
         }
       },
       {
         title: "原始日志",
         dataIndex: 'raw_msg',
         key: 'raw_msg',
-        render: function (value, row) {
+        render: (value, row) => {
+          if (row.skill === "kill" || row.skill === "killed") {
+            return <div style={{color: "deeppink"}}>{value}</div>;
+          }
           if (!row.skill) {
             return <div>{value}</div>;
           }
+          const [color,typeName] = getTypeColor(row.player_type)
           let results = []
-          const parts = value.split(row.skill);
+          const parts = value.split(row.player);
           results.push(parts[0])
+          results.push((<span><Tag className="custom-tag" color={color}>{typeName}</Tag><Tag
+            className="custom-tag">{playerPros[row.player_class].name}</Tag><span>
+            <a onClick={() => this.searchPlayer(row.player)}>{row.player}</a></span></span>))
+
+          const parts2 = parts[1].split(row.skill);
+          results.push(parts2[0]);
           if (row.skill !== "attack") {
             results.push(<span style={{color: "red", fontWeight: "bold"}} key={1}>{row.skill}</span>)
           }
-          results.push(parts[1])
+          if (row.target !== "" && parts2[1]) {
+            const parts3 = parts2[1].split(row.target);
+            const [color,typeName] = getTypeColor(row.target_type)
+            results.push(parts3[0]);
+            results.push((<span><Tag className="custom-tag" color={color}>{typeName}</Tag><Tag
+              className="custom-tag">{playerPros[row.target_class].name}</Tag><span>
+            <a onClick={() => this.searchPlayer(row.target)}>{row.target}</a></span></span>))
+            results.push(parts3[1]);
+          }else {
+            results.push(parts2[1])
+          }
           return <div>{results}</div>;
-        }
+        },
       },
     ];
   }
@@ -284,7 +264,7 @@ class Rank extends React.Component {
     })
     return (
       <PageContainer>
-        <Card extra={this.searchForm()}>
+        <Card extra={this.searchForm()} >
           <Table
             bordered
             size="small"
@@ -307,7 +287,7 @@ class Rank extends React.Component {
           onCancel={() => {
             this.setState({isModalVisible: false})
           }}
-          width="70%"
+          width="60%"
           footer={null}
         >
           <Table

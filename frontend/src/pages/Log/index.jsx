@@ -4,8 +4,8 @@ import {PageContainer} from '@ant-design/pro-layout';
 import {connect} from "@/.umi/plugin-dva/exports";
 import moment from "moment";
 import {parse} from 'querystring'
-import {playerPros} from "@/utils/utils";
-import "./log.css"
+import {getTypeColor, playerPros} from "@/utils/utils";
+import "../../global.less"
 
 const {RangePicker} = DatePicker
 const {Option} = Select
@@ -30,64 +30,10 @@ class Log extends React.Component {
     super(props);
     this.columns = [
       {
-        title: "玩家",
-        dataIndex: 'player',
-        key: 'player',
-        width: "18%",
-        render: (value, row) => {
-          let color = "grey"
-          let typeName = ""
-          if (row.player_type === 1) {
-            color = "green"
-            typeName = "天族"
-          } else if (row.player_type === 2) {
-            color = "blue"
-            typeName = "魔族"
-          } else if (row.player_type === 0) {
-            color = "orange"
-            typeName = "其它"
-          }
-          return <div><Tag className="custom-tag" color={color}>{typeName}</Tag><Tag
-            className="custom-tag">{playerPros[row.player_class].name}</Tag><span>
-            <a onClick={() => this.searchPlayer(row)}>{value}</a></span></div>
-        }
-      },
-      {
-        title: "对象",
-        dataIndex: 'target',
-        key: 'target',
-        width: "18%",
-        render: function (value, row) {
-          if (!value) {
-            return <div>{value}</div>;
-          }
-          let color = "grey"
-          let typeName = ""
-          if (row.target_type === 1) {
-            color = "green"
-            typeName = "天族"
-          } else if (row.target_type === 2) {
-            color = "blue"
-            typeName = "魔族"
-          } else if (row.target_type === 0) {
-            color = "orange"
-            typeName = "其它"
-          }
-          return <div><Tag className="custom-tag" color={color}>{typeName}</Tag><Tag
-            className="custom-tag">{playerPros[row.target_class].name}</Tag><span>{value}</span></div>
-        }
-      },
-      {
-        title: "数值",
-        dataIndex: 'value',
-        key: 'value',
-        width: "6%",
-      },
-      {
         title: "时间",
         dataIndex: 'time',
         key: 'time',
-        width: "10%",
+        width: 145,
         render: (value, row) => {
           return moment(value).format("YYYY-MM-DD HH:mm:ss")
         }
@@ -96,24 +42,41 @@ class Log extends React.Component {
         title: "原始日志",
         dataIndex: 'raw_msg',
         key: 'raw_msg',
-        width: "46%",
-        render: function (value, row) {
+        render: (value, row) => {
           if (row.skill === "kill" || row.skill === "killed") {
             return <div style={{color: "deeppink"}}>{value}</div>;
           }
           if (!row.skill) {
             return <div>{value}</div>;
           }
+          const [color,typeName] = getTypeColor(row.player_type)
           let results = []
-          const parts = value.split(row.skill);
+          const parts = value.split(row.player);
           results.push(parts[0])
+          results.push((<span key={row.id+row.player}><Tag className="custom-tag" color={color}>{typeName}</Tag><Tag className="custom-tag">{playerPros[row.player_class].name}</Tag><a onClick={() => this.searchPlayer(row.player)}>{row.player}</a></span>))
+
+          const parts2 = parts[1].split(row.skill);
+          results.push(parts2[0]);
           if (row.skill !== "attack") {
             results.push(<span style={{color: "red", fontWeight: "bold"}} key={1}>{row.skill}</span>)
           }
-          results.push(parts[1])
+          if (row.target !== "" && parts2[1]) {
+            const parts3 = parts2[1].split(row.target);
+            const [color,typeName] = getTypeColor(row.target_type)
+            results.push(parts3[0]);
+            results.push((<span key={row.id+row.target}><Tag className="custom-tag" color={color}>{typeName}</Tag><Tag className="custom-tag">{playerPros[row.target_class].name}</Tag><a onClick={() => this.searchPlayer(row.target)}>{row.target}</a></span>))
+            results.push(parts3[1]);
+          }else {
+            results.push(parts2[1])
+          }
           return <div>{results}</div>;
         },
-      }
+      },
+      {
+        title: "数值",
+        dataIndex: 'value',
+        key: 'value',
+      },
     ];
   }
 
@@ -129,10 +92,10 @@ class Log extends React.Component {
     this.query().then()
   }
 
-  async searchPlayer(row) {
-    await this.formRef.current.setFieldsValue({player: row.player, target: row.player})
+  async searchPlayer(player) {
+    await this.formRef.current.setFieldsValue({player: player, target: player})
     await this.setState({page: 1})
-    this.props.history.push("/log?player=" + row.player)
+    this.props.history.push("/log?player=" + player)
     this.query().then()
   }
 

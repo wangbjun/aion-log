@@ -34,3 +34,13 @@ export const playerPros = [
   {name: "魔道", logo: "md.png"},
   {name: "执行", logo: "zxz.png"},
 ]
+
+export const getTypeColor = (type) => {
+  if (type === 1) {
+    return ["green","天族"]
+  } else if (type === 2) {
+    return ["blue","魔族"]
+  } else {
+    return ["orange","其它"]
+  }
+}
