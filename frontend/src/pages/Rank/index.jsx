@@ -116,8 +116,7 @@ class Rank extends React.Component {
           const parts = value.split(row.player);
           results.push(parts[0])
           results.push((<span><Tag className="custom-tag" color={color}>{typeName}</Tag><Tag
-            className="custom-tag">{playerPros[row.player_class].name}</Tag><span>
-            <a onClick={() => this.searchPlayer(row.player)}>{row.player}</a></span></span>))
+            className="custom-tag">{playerPros[row.player_class].name}</Tag><span>{row.player}</span></span>))
 
           const parts2 = parts[1].split(row.skill);
           results.push(parts2[0]);
@@ -129,8 +128,7 @@ class Rank extends React.Component {
             const [color,typeName] = getTypeColor(row.target_type)
             results.push(parts3[0]);
             results.push((<span><Tag className="custom-tag" color={color}>{typeName}</Tag><Tag
-              className="custom-tag">{playerPros[row.target_class].name}</Tag><span>
-            <a onClick={() => this.searchPlayer(row.target)}>{row.target}</a></span></span>))
+              className="custom-tag">{playerPros[row.target_class].name}</Tag><span>{row.target}</span></span>))
             results.push(parts3[1]);
           }else {
             results.push(parts2[1])
@@ -140,6 +138,7 @@ class Rank extends React.Component {
       },
     ];
   }
+
 
   renderName = (value) => {
     return <Link to={`/log?player=${value}`}>{value}</Link>
@@ -219,9 +218,9 @@ class Rank extends React.Component {
             }
             onSelect={() => this.query()}
           >
-            <Option value="3">至尊星耀</Option>
-            <Option value="4">最强王者</Option>
-            <Option value="5">荣耀王者</Option>
+            <Option value="3">黄金</Option>
+            <Option value="4">钻石</Option>
+            <Option value="5">王者</Option>
           </Select>
         </Form.Item>
         <Form.Item label="玩家" name="name" style={{marginTop: "5px"}}>

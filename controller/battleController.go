@@ -5,6 +5,7 @@ import (
 	"aion/service"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"sort"
 	"strconv"
 	"time"
 )
@@ -31,25 +32,26 @@ type LogResult struct {
 // GetAll 获取所有日志
 func (r battleController) GetAll(ctx *gin.Context) {
 	var (
-		st, _            = ctx.GetQuery("st")
-		et, _            = ctx.GetQuery("et")
-		queryPage, _     = ctx.GetQuery("page")
-		queryPageSize, _ = ctx.GetQuery("pageSize")
-		queryPlayer, _   = ctx.GetQuery("player")
-		queryTarget, _   = ctx.GetQuery("target")
-		querySkill, _    = ctx.GetQuery("skill")
-		sort, _          = ctx.GetQuery("sort")
-		value, _         = ctx.GetQuery("value")
+		st, _        = ctx.GetQuery("st")
+		et, _        = ctx.GetQuery("et")
+		page, _      = ctx.GetQuery("page")
+		pageSize, _  = ctx.GetQuery("pageSize")
+		player, _    = ctx.GetQuery("player")
+		target, _    = ctx.GetQuery("target")
+		skill, _     = ctx.GetQuery("skill")
+		sorter, _    = ctx.GetQuery("sort")
+		value, _     = ctx.GetQuery("value")
+		banPlayer, _ = ctx.GetQuery("banPlayer")
 	)
-	page, err := strconv.Atoi(queryPage)
+	pageInt, err := strconv.Atoi(page)
 	if err != nil {
-		page = 1
+		pageInt = 1
 	}
-	pageSize, err := strconv.Atoi(queryPageSize)
-	if err != nil || pageSize < 0 || pageSize > 500 {
-		pageSize = 500
+	pageSizeInt, err := strconv.Atoi(pageSize)
+	if err != nil || pageSizeInt < 0 || pageSizeInt > 500 {
+		pageSizeInt = 500
 	}
-	data, count, err := model.ChatLog{}.GetAll(st, et, page, pageSize, queryPlayer, queryTarget, querySkill, sort, value)
+	data, count, err := model.ChatLog{}.GetAll(st, et, pageInt, pageSizeInt, player, target, skill, sorter, value, banPlayer)
 	if err != nil {
 		r.Failed(ctx, Failed, err.Error())
 		return
@@ -105,7 +107,7 @@ func (r battleController) GetRank(ctx *gin.Context) {
 	r.Success(ctx, "ok", data)
 }
 
-// GetPlayers 获取所有玩家
+// GetPlayers 获取时间段内的玩家
 func (r battleController) GetPlayers(ctx *gin.Context) {
 	var (
 		st, _ = ctx.GetQuery("st")
@@ -197,19 +199,99 @@ func (r battleController) GetTimeline(ctx *gin.Context) {
 		r.Failed(ctx, ParamError, "请选择时间范围")
 		return
 	}
-	timeline, err := model.Timeline{}.GetAll(st, et)
+	killTime, err := model.Timeline{}.GetAll(st, et, 1)
 	if err != nil {
 		r.Failed(ctx, Failed, err.Error())
 		return
 	}
+	killedTime, err := model.Timeline{}.GetAll(st, et, 2)
+	if err != nil {
+		r.Failed(ctx, Failed, err.Error())
+		return
+	}
+	killTimes := mergeTimes(killTime, killedTime)
+
 	var times []string
-	var values []int
-	for _, tl := range timeline {
-		times = append(times, tl.Time.Format(time.DateTime))
-		values = append(values, tl.Value)
+	var killValue []int
+	var killedValue []int
+	for _, t := range killTimes {
+		times = append(times, t.Format(time.DateTime))
+		killValue = append(killValue, getValue(killTime, t))
+		killedValue = append(killedValue, getValue(killedTime, t))
 	}
 	r.Success(ctx, "ok", map[string]interface{}{
-		"timeData":  times,
-		"valueData": values,
+		"timeData":    times,
+		"killValue":   killValue,
+		"killedValue": killedValue,
 	})
+}
+
+func (r battleController) GetClassTop(ctx *gin.Context) {
+	var (
+		class, _  = ctx.GetQuery("class")
+		player, _ = ctx.GetQuery("player")
+	)
+	if class == "" {
+		r.Failed(ctx, ParamError, "请选择职业")
+		return
+	}
+	key := fmt.Sprintf("%s_%s", class, player)
+	if cached, ok := r.cache.GetClassTop(key); ok {
+		r.Success(ctx, "ok", cached)
+		return
+	}
+	result, err := model.ChatLog{}.GetClassTop(class, player)
+	if err != nil {
+		r.Failed(ctx, Failed, err.Error())
+		return
+	}
+	for _, res := range result {
+		if player != "" {
+			criticalRatio, err := model.ChatLog{}.GetCriticalRatio(player)
+			if err != nil {
+				continue
+			}
+			for _, ratio := range criticalRatio {
+				if res.Skill == ratio.Skill {
+					res.Critical = ratio.Critical
+				}
+			}
+		} else {
+			if ratio, ok := r.cache.GetSkillCritical(res.Skill); ok {
+				res.Critical = ratio
+			}
+		}
+	}
+	if len(result) != 0 {
+		r.cache.SetClassTop(key, result)
+	}
+	r.Success(ctx, "ok", result)
+}
+
+// 合并两个时间序列
+func mergeTimes(data1, data2 []model.Timeline) []time.Time {
+	timeSet := make(map[time.Time]struct{})
+	for _, dp := range data1 {
+		timeSet[dp.Time] = struct{}{}
+	}
+	for _, dp := range data2 {
+		timeSet[dp.Time] = struct{}{}
+	}
+	mergedTimes := make([]time.Time, 0, len(timeSet))
+	for t := range timeSet {
+		mergedTimes = append(mergedTimes, t)
+	}
+	sort.Slice(mergedTimes, func(i, j int) bool {
+		return mergedTimes[i].Before(mergedTimes[j])
+	})
+	return mergedTimes
+}
+
+func getValue(data []model.Timeline, targetTime time.Time) int {
+	for _, dp := range data {
+		if dp.Time.Equal(targetTime) {
+			return dp.Value
+		}
+	}
+	return 0
 }

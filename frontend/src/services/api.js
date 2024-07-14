@@ -28,3 +28,10 @@ export async function queryTimeline(params) {
   });
 }
 
+export async function queryClassTop(params) {
+  return request('/api/v1/classTop', {
+    params,
+    method: "GET"
+  });
+}
+

@@ -31,13 +31,13 @@ class Player extends React.Component {
           return a.name.localeCompare(b.name)
         },
         render: this.renderName,
-        width: 300,
+        width: "30%",
       },
       {
         title: "种族",
         dataIndex: 'type',
         key: 'type',
-        width: 100,
+        width: "10%",
         sorter: function (a, b) {
           return a.type - b.type
         },
@@ -57,7 +57,7 @@ class Player extends React.Component {
         title: "职业",
         dataIndex: 'class',
         key: 'class',
-        width: 100,
+        width: "10%",
         sorter: function (a, b) {
           return a.class - b.class
         },
@@ -69,7 +69,7 @@ class Player extends React.Component {
         title: "技能次数",
         dataIndex: 'skill_count',
         key: 'skill_count',
-        width: 100,
+        width: "10%",
         sorter: function (a, b) {
           return a.skill_count - b.skill_count
         },
@@ -78,7 +78,7 @@ class Player extends React.Component {
         title: "击杀数",
         dataIndex: 'kill_count',
         key: 'kill_count',
-        width: 100,
+        width: "10%",
         sorter: function (a, b) {
           return a.kill_count - b.kill_count
         },
@@ -87,7 +87,7 @@ class Player extends React.Component {
         title: "死亡数",
         dataIndex: 'death_count',
         key: 'death_count',
-        width: 100,
+        width: "10%",
         sorter: function (a, b) {
           return a.death_count - b.death_count
         },
@@ -96,7 +96,7 @@ class Player extends React.Component {
         title: "最后更新时间",
         dataIndex: 'time',
         key: 'time',
-        width: 180,
+        width: "20%",
         sorter: function (a, b) {
           return moment(a.time).isAfter(moment(b.time))
         },
@@ -112,7 +112,7 @@ class Player extends React.Component {
   }
 
   componentDidMount() {
-    this.query()
+    this.query().then()
   }
 
   query = async () => {
@@ -124,6 +124,7 @@ class Player extends React.Component {
       st = fieldValue.time[0].format("YYYY-MM-DD HH:mm:ss")
       et = fieldValue.time[1].format("YYYY-MM-DD HH:mm:ss")
     }
+
     await dispatch({
       type: 'global/fetchTimeline',
       payload: {
@@ -141,18 +142,220 @@ class Player extends React.Component {
         class: fieldValue.class
       }
     });
-    this.initPie();
-    this.initServerPie();
+    this.initAngelPie();
+    this.initDemonPie();
   }
 
-  onReset = () => {
+  onReset = async () => {
     this.formRef.current.resetFields();
-    this.query()
+    this.query().then()
   };
+
+  getClassData(type) {
+    const {playerList} = this.props
+    let class2num = {};
+    playerList && playerList.forEach(v => {
+      if (v.type !== type) {
+        return
+      }
+      if (class2num[v.class]) {
+        class2num[v.class] = class2num[v.class] + 1;
+      } else {
+        class2num[v.class] = 1;
+      }
+    });
+    let result = []
+    Object.keys(class2num).forEach(key => {
+      result.push({
+        name: playerPros[key].name + ": " + class2num[key],
+        value: class2num[key]
+      });
+    })
+    return result
+  }
+
+  initAngelPie() {
+    try {
+      if (!this.angelPie) {
+        this.angelPie = echarts.init(document.getElementById("angelPie"))
+      }
+    }catch (e) {
+      console.log(e)
+      return
+    }
+    const option = {
+      title: {
+        text: "天族职业分布"
+      },
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b0}'
+      },
+      legend: {
+        orient: 'vertical',
+        left: 'right',
+        align: 'left'
+      },
+      series: [
+        {
+          type: 'pie',
+          radius: '80%',
+          data: this.getClassData(1),
+          emphasis: {
+            itemStyle: {
+              shadowBlur: 10,
+              shadowOffsetX: 0,
+              shadowColor: 'rgba(0, 0, 0, 0.5)'
+            }
+          },
+          label: {
+            show: true,
+            position: 'inside',
+            formatter: '{d}%'
+          }
+        }
+      ]
+    }
+    this.angelPie.setOption(option)
+  }
+
+  initDemonPie() {
+    try {
+      if (!this.demonPie) {
+        this.demonPie = echarts.init(document.getElementById("demonPie"))
+      }
+    }catch (e) {
+      console.log(e)
+      return
+    }
+    const option = {
+      title: {
+        text: "魔族职业分布"
+      },
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b0}'
+      },
+      legend: {
+        orient: 'vertical',
+        left: 'right',
+        align: 'left'
+      },
+      series: [
+        {
+          type: 'pie',
+          radius: '80%',
+          data: this.getClassData(2),
+          emphasis: {
+            itemStyle: {
+              shadowBlur: 10,
+              shadowOffsetX: 0,
+              shadowColor: 'rgba(0, 0, 0, 0.5)'
+            }
+          },
+          label: {
+            show: true,
+            position: 'inside',
+            formatter: '{d}%'
+          }
+        }
+      ]
+    }
+    this.demonPie.setOption(option)
+  }
+
+  initTimeline() {
+    try {
+      if (this.timeline) {
+        echarts.dispose(this.timeline)
+      }
+      this.timeline = echarts.init(document.getElementById("timeline"))
+    }catch (e) {
+      console.log(e)
+      return
+    }
+    const {timeline} = this.props
+    const option = {
+      grid: {
+        left: 30,
+        right: 20,
+        top: '10%',
+        bottom: 5
+      },
+      toolbox: {
+        feature: {
+          dataZoom: {
+            yAxisIndex: 'none'
+          },
+        }
+      },
+      legend: {
+        data: ['天族击杀数', '魔族击杀数']
+      },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'shadow'
+        },
+      },
+      xAxis: {
+        show: false,
+        type: 'category',
+        boundaryGap: true,
+        data: timeline.timeData,
+      },
+      yAxis: {
+        type: 'value'
+      },
+      series: [
+        {
+          name: "天族击杀数",
+          type: 'line',
+          data: timeline.killValue,
+        },
+        {
+          name: '魔族击杀数',
+          type: 'line',
+          data: timeline.killedValue,
+        },
+      ],
+    }
+    this.timeline.on('datazoom', async (params) => {
+      let start = params.batch && params.batch[0].startValue
+      let end = params.batch && params.batch[0].endValue
+      let startTime = timeline.timeData && timeline.timeData[start]
+      let endTime = timeline.timeData && timeline.timeData[end]
+      if (startTime && endTime) {
+        this.formRef.current.setFieldsValue({time: [moment(startTime), moment(endTime)]})
+        this.query().then()
+      }
+    })
+    this.timeline.setOption(option)
+  }
+
+  getStatData(data) {
+    let angel = 0;
+    let demon = 0;
+    let other = 0;
+    data && data.forEach(v => {
+      switch (v.type) {
+        case 0:
+          other++
+          break
+        case 1:
+          angel++
+          break
+        case 2:
+          demon++
+          break
+      }
+    })
+    return {angel, demon, other}
+  }
 
   searchForm() {
     const onFinish = async () => {
-      this.query()
+      this.query().then()
     };
     const dateFormat = 'YYYY-MM-DD HH:mm:ss';
     return (
@@ -228,259 +431,41 @@ class Player extends React.Component {
       </Form>)
   }
 
-  getStatData(data) {
-    let god = 0;
-    let mo = 0;
-    let other = 0;
-    data && data.forEach(v => {
-      switch (v.type) {
-        case 0:
-          other++
-          break
-        case 1:
-          god++
-          break
-        case 2:
-          mo++
-          break
-      }
-    })
-    return {god, mo, other}
-  }
-
-  getClassData(data) {
-    let class2num = {};
-    data && data.forEach(v => {
-      if (v.type === 0) {
-        return
-      }
-      if (class2num[v.class]) {
-        class2num[v.class] = class2num[v.class] + 1;
-      } else {
-        class2num[v.class] = 1;
-      }
-    });
-    let result = []
-    Object.keys(class2num).forEach(key => {
-      result.push({
-        name: playerPros[key].name + ": " + class2num[key],
-        value: class2num[key]
-      });
-    })
-    return result
-  }
-
-  getServerData(data) {
-    let server2num = {};
-    data && data.forEach(v => {
-      const parts = v.name.split("-");
-      if (parts.length !== 2) {
-        return
-      }
-      let serverName = parts[1]
-      if (server2num[serverName]) {
-        server2num[serverName] = server2num[serverName] + 1;
-      } else {
-        server2num[serverName] = 1;
-      }
-    })
-      let result = []
-      Object.keys(server2num).forEach(key => {
-        result.push({
-          name: key,
-          value: server2num[key]
-        });
-      })
-      return result
-  }
-
-  initPie() {
-    try {
-      if (!this.classPie) {
-        this.classPie = echarts.init(document.getElementById("classPie"))
-      }
-    }catch (e) {
-      console.log(e)
-      return
-    }
-    const {playerList} = this.props
-    const option = {
-      tooltip: {
-        trigger: 'item',
-        formatter: '{b0}'
-      },
-      legend: {
-        orient: 'vertical',
-        left: 'right',
-        align: 'left'
-      },
-      series: [
-        {
-          type: 'pie',
-          radius: '90%',
-          data: this.getClassData(playerList),
-          emphasis: {
-            itemStyle: {
-              shadowBlur: 10,
-              shadowOffsetX: 0,
-              shadowColor: 'rgba(0, 0, 0, 0.5)'
-            }
-          },
-          label: {
-            show: true,
-            position: 'inside',
-            formatter: '{d}%'
-          }
-        }
-      ]
-    }
-    this.classPie.setOption(option)
-  }
-
-  initServerPie() {
-    try {
-      if (!this.serverPie) {
-        this.serverPie = echarts.init(document.getElementById("serverPie"))
-      }
-    }catch (e) {
-      console.log(e)
-      return
-    }
-    const {playerList} = this.props
-    const option = {
-      tooltip: {
-        trigger: 'item',
-        formatter: '{b0}'
-      },
-      legend: {
-        orient: 'vertical',
-        left: 'right',
-        align: 'left'
-      },
-      series: [
-        {
-          type: 'pie',
-          radius: '90%',
-          data: this.getServerData(playerList),
-          emphasis: {
-            itemStyle: {
-              shadowBlur: 10,
-              shadowOffsetX: 0,
-              shadowColor: 'rgba(0, 0, 0, 0.5)'
-            }
-          },
-          label: {
-            show: true,
-            position: 'inside',
-            formatter: '{d}%'
-          }
-        }
-      ]
-    }
-    this.serverPie.setOption(option)
-  }
-
-  initTimeline() {
-    try {
-      if (this.timeline) {
-        echarts.dispose(this.timeline)
-      }
-      this.timeline = echarts.init(document.getElementById("timeline"))
-    }catch (e) {
-      console.log(e)
-      return
-    }
-    const {timeline} = this.props
-    const option = {
-      grid: {
-        left: 60,
-        right: 60,
-        top: '10%',
-        bottom: '20%'
-      },
-      toolbox: {
-        feature: {
-          dataZoom: {
-            yAxisIndex: 'none'
-          },
-          restore: {}
-          }
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-          type: 'shadow'
-        },
-      },
-      xAxis: {
-        data: timeline.timeData,
-        silent: false,
-        splitLine: {
-          show: false
-        },
-        splitArea: {
-          show: false
-        }
-      },
-      yAxis: {
-        splitArea: {
-          show: false
-        }
-      },
-      series: [
-        {
-          type: "bar",
-          data: timeline.valueData,
-        }
-      ],
-    }
-    this.timeline.on('datazoom', (params) => {
-      let start = params.batch && params.batch[0].startValue
-      let end = params.batch && params.batch[0].endValue
-
-      let startTime = timeline.timeData && timeline.timeData[start]
-      let endTime = timeline.timeData && timeline.timeData[end]
-      if (startTime && endTime) {
-        this.formRef.current.setFieldsValue({time: [moment(startTime),moment(endTime)]})
-        this.query()
-      }
-    })
-    this.timeline.setOption(option)
-  }
-
   render() {
     const {playerList, loading} = this.props
     const statData = this.getStatData(playerList)
     return (
       <PageContainer>
         <Card extra={this.searchForm()} >
-          <div id="timeline" style={{height:'200px'}}/>
           <Row>
-            <Col span={8}>
+            <Col span={7}>
               <Card title="种族">
-                <Row gutter={24}>
+                <Row gutter={16}>
                   <Col span={6}>
-                    <Statistic title="天魔总数" value={statData.god + statData.mo} style={{padding: "12px"}} valueStyle={{color: "red"}}/>
+                    <Statistic title="天魔总数" value={statData.angel + statData.demon} valueStyle={{color: "red"}}/>
                   </Col>
                   <Col span={6}>
-                    <Statistic title="天族" value={statData.god} style={{padding: "12px"}} valueStyle={{color: "green"}}/>
+                    <Statistic title="天族" value={statData.angel} valueStyle={{color: "green"}}/>
                   </Col>
                   <Col span={6}>
-                    <Statistic title="魔族" value={statData.mo} style={{padding: "12px"}} valueStyle={{color: "blue"}}/>
+                    <Statistic title="魔族" value={statData.demon} valueStyle={{color: "blue"}}/>
                   </Col>
                   <Col span={6}>
-                    <Statistic title="其它" value={statData.other} style={{padding: "12px"}} valueStyle={{color: "grey"}}/>
+                    <Statistic title="其它" value={statData.other} valueStyle={{color: "grey"}}/>
                   </Col>
                 </Row>
               </Card>
-              <Card title="职业分布">
-                <div id="classPie" style={{height: '300px'}}/>
+              <Card>
+                <div id="angelPie" style={{height: '250px'}}/>
               </Card>
-              <Card title="区服分布">
-                <div id="serverPie" style={{height: '300px'}}/>
+              <Card>
+                <div id="demonPie" style={{height: '250px'}}/>
               </Card>
             </Col>
-            <Col span={16}>
+            <Col span={17}>
+              <Card>
+                <div id="timeline" style={{height: '250px'}}/>
+              </Card>
               <Table
                 bordered
                 size="small"
@@ -490,7 +475,7 @@ class Player extends React.Component {
                   return record.id
                 }}
                 pagination={{
-                  defaultPageSize: 25,
+                  defaultPageSize: 15,
                   pageSizeOptions: ['50', '100', '200', '500'],
                   showTotal: (total) => `共${total}条记录`,
                 }}

@@ -23,16 +23,16 @@ export const isAntDesignProOrDev = () => {
 export const getPageQuery = () => parse(window.location.href.split('?')[1]);
 
 export const playerPros = [
-  {name: "其它", logo: "unknown.png"},
-  {name: "剑星", logo: "jx.png"},
-  {name: "守护", logo: "sh.png"},
-  {name: "杀星", logo: "sx.png"},
-  {name: "弓星", logo: "gx.png"},
-  {name: "治愈", logo: "zy.png"},
-  {name: "护法", logo: "hf.png"},
-  {name: "精灵", logo: "jl.png"},
-  {name: "魔道", logo: "md.png"},
-  {name: "执行", logo: "zxz.png"},
+  {name: "其它", logo: "unknown.png", class: 0},
+  {name: "剑星", logo: "jx.png", class: 1},
+  {name: "守护", logo: "sh.png", class: 2},
+  {name: "杀星", logo: "sx.png", class: 3},
+  {name: "弓星", logo: "gx.png", class: 4},
+  {name: "治愈", logo: "zy.png", class: 5},
+  {name: "护法", logo: "hf.png", class: 6},
+  {name: "精灵", logo: "jl.png", class: 7},
+  {name: "魔道", logo: "md.png", class: 8},
+  {name: "执行", logo: "zxz.png", class: 9},
 ]
 
 export const getTypeColor = (type) => {
@@ -41,6 +41,6 @@ export const getTypeColor = (type) => {
   } else if (type === 2) {
     return ["blue","魔族"]
   } else {
-    return ["orange","其它"]
+    return ["orange","NPC"]
   }
 }

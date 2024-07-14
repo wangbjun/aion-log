@@ -1,68 +1,63 @@
 CREATE TABLE `aion_chat_log`
 (
     `id`      int NOT NULL AUTO_INCREMENT,
-    `player`  varchar(100) DEFAULT NULL,
-    `skill`   varchar(100) DEFAULT NULL,
-    `target`  varchar(100) DEFAULT NULL,
-    `value`   int          DEFAULT NULL,
-    `time`    datetime     DEFAULT NULL,
-    `raw_msg` varchar(255) DEFAULT NULL,
+    `player`  varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `skill`   varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `target`  varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `value`   int                                                           DEFAULT NULL,
+    `time`    datetime                                                      DEFAULT NULL,
+    `raw_msg` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
     PRIMARY KEY (`id`),
-    KEY `index_time` (`time`),
-    KEY `index_player` (`player`)
+    KEY `idx_player_skill_time` (`player`, `skill`, `time`),
+    KEY `idx_skill` (`skill`),
+    KEY `idx_time` (`time`),
+    KEY `idx_target` (`target`),
+    KEY `idx_value` (`value`)
 ) ENGINE = InnoDB
-  AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_0900_ai_ci;
+  COLLATE = utf8mb4_general_ci;
 
 CREATE TABLE `aion_player_info`
 (
     `id`    int NOT NULL AUTO_INCREMENT,
-    `name`  varchar(100) DEFAULT NULL,
-    `type`  int          DEFAULT NULL,
-    `class` int          DEFAULT NULL,
-    `time`  datetime     DEFAULT NULL,
+    `name`  varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `type`  int                                                           DEFAULT NULL,
+    `class` int                                                           DEFAULT NULL,
+    `time`  datetime                                                      DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `index_uniq` (`name`, `type`)
 ) ENGINE = InnoDB
-  AUTO_INCREMENT = 1
+  AUTO_INCREMENT = 6458
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_0900_ai_ci;
+  COLLATE = utf8mb4_general_ci;
 
 CREATE TABLE `aion_player_rank`
 (
     `id`     int NOT NULL AUTO_INCREMENT,
-    `player` varchar(100) DEFAULT NULL,
-    `count`  int          DEFAULT NULL,
-    `time`   datetime     DEFAULT NULL,
+    `player` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+    `count`  int                                                           DEFAULT NULL,
+    `time`   datetime                                                      DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `index_uniq` (`player`, `count`, `time`)
 ) ENGINE = InnoDB
-  AUTO_INCREMENT = 4093
+  AUTO_INCREMENT = 6002
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_0900_ai_ci;
+  COLLATE = utf8mb4_general_ci;
 
 CREATE TABLE `aion_player_skill`
 (
-    `skill` varchar(100) NOT NULL,
-    `class` int          NOT NULL,
+    `skill` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+    `class` int                                                           NOT NULL,
     UNIQUE KEY `aion_player_skill_pk` (`class`, `skill`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_0900_ai_ci;
+  COLLATE = utf8mb4_general_ci;
 
-CREATE TABLE `users`
+CREATE TABLE `aion_timeline`
 (
-    `id`         int NOT NULL AUTO_INCREMENT,
-    `name`       varchar(100) DEFAULT NULL,
-    `email`      varchar(100) DEFAULT NULL,
-    `password`   varchar(100) DEFAULT NULL,
-    `salt`       varchar(100) DEFAULT NULL,
-    `created_at` datetime     DEFAULT NULL,
-    `updated_at` datetime     DEFAULT NULL,
-    `deleted_at` datetime     DEFAULT NULL,
-    PRIMARY KEY (`id`)
+    `time`  datetime NOT NULL,
+    `value` int      NOT NULL,
+    `type`  int      NOT NULL DEFAULT '0'
 ) ENGINE = InnoDB
-  AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_0900_ai_ci
+  COLLATE = utf8mb4_general_ci

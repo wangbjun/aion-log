@@ -24,6 +24,10 @@ var updateSql = []string{
 		"target in('魔族中级守护神将','魔族上级守护神将','魔族结界膜生成师','魔族城门')) and class != 0",
 	"UPDATE aion_player_info SET type = 2 WHERE name in (select distinct player from aion_chat_log where " +
 		"target in('天族中级守护神将','天族上级守护神将','天族结界膜生成师','天族城门')) and class != 0",
+	"UPDATE aion_player_info SET type = 1 WHERE name in (select distinct target from aion_chat_log where " +
+		"player in('魔族中级守护神将','魔族上级守护神将','魔族结界膜生成师','魔族城门')) and class != 0",
+	"UPDATE aion_player_info SET type = 2 WHERE name in (select distinct target from aion_chat_log where " +
+		"player in('天族中级守护神将','天族上级守护神将','天族结界膜生成师','天族城门')) and class != 0",
 }
 
 func (r ClassifyService) Run() error {

@@ -1,4 +1,4 @@
-import {queryLogList, queryPlayer, queryRankList, queryTimeline} from "@/services/api";
+import {queryClassTop, queryLogList, queryPlayer, queryRankList, queryTimeline} from "@/services/api";
 import {notification} from "antd";
 
 const GlobalModel = {
@@ -8,7 +8,9 @@ const GlobalModel = {
     logList: [],
     rankList: [],
     playerList: [],
-    timeline: {}
+    timeline: {},
+    timelineKill: {},
+    classTop: []
   },
   effects: {
     * fetchLogList({payload}, {call, put, select}) {
@@ -37,6 +39,21 @@ const GlobalModel = {
         },
       });
     },
+
+    * fetchClassTop({payload}, {call, put, select}) {
+      const result = yield call(queryClassTop, payload);
+      if (result.code !== 200) {
+        notification.error(result.msg);
+        return
+      }
+      yield put({
+        type: 'saveDefault',
+        payload: {
+          classTop: result.data,
+        },
+      });
+    },
+
     * fetchRankList({payload}, {call, put, select}) {
       const result = yield call(queryRankList, payload);
       if (result.code !== 200) {

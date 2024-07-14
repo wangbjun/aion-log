@@ -3,9 +3,11 @@ package service
 import "aion/model"
 
 type CacheService struct {
-	cachePlayers map[string][]*model.Player
-	cacheRank    map[string][]model.RankResult
-	cachePlayer  map[string]*model.Player
+	cachePlayers  map[string][]*model.Player
+	cacheRank     map[string][]model.RankResult
+	cachePlayer   map[string]*model.Player
+	cacheClass    map[string][]*model.SkillDamage
+	cacheCritical map[string]model.SkillDamage
 }
 
 var defaultCacheService *CacheService
@@ -13,9 +15,11 @@ var defaultCacheService *CacheService
 func NewCacheService() *CacheService {
 	if defaultCacheService == nil {
 		defaultCacheService = &CacheService{
-			cachePlayers: make(map[string][]*model.Player),
-			cacheRank:    make(map[string][]model.RankResult),
-			cachePlayer:  make(map[string]*model.Player),
+			cachePlayers:  make(map[string][]*model.Player),
+			cacheRank:     make(map[string][]model.RankResult),
+			cachePlayer:   make(map[string]*model.Player),
+			cacheClass:    make(map[string][]*model.SkillDamage),
+			cacheCritical: make(map[string]model.SkillDamage),
 		}
 	}
 
@@ -29,6 +33,14 @@ func (s *CacheService) Load() error {
 	}
 	for _, player := range players {
 		s.cachePlayer[player.Name] = player
+	}
+
+	criticalRatio, err := model.ChatLog{}.GetCriticalRatio("")
+	if err != nil {
+		return err
+	}
+	for _, critical := range criticalRatio {
+		s.cacheCritical[critical.Skill] = critical
 	}
 
 	return nil
@@ -54,4 +66,18 @@ func (s *CacheService) GetRank(key string) ([]model.RankResult, bool) {
 }
 func (s *CacheService) SetRank(key string, data []model.RankResult) {
 	s.cacheRank[key] = data
+}
+
+func (s *CacheService) GetClassTop(key string) ([]*model.SkillDamage, bool) {
+	cached, ok := s.cacheClass[key]
+	return cached, ok
+}
+
+func (s *CacheService) SetClassTop(key string, data []*model.SkillDamage) {
+	s.cacheClass[key] = data
+}
+
+func (s *CacheService) GetSkillCritical(skill string) (float64, bool) {
+	ratio, ok := s.cacheCritical[skill]
+	return ratio.Critical, ok
 }

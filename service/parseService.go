@@ -368,12 +368,6 @@ func formatValue(ds string) int {
 	return d
 }
 
-var invalidPlayer = map[string]int{
-	"太古气息": 1, "地之气息": 1, "水之气息": 1, "旋风之气息": 1, "风之气息": 1, "高洁气息": 1, "神圣的气息": 1, "治愈之气息": 1,
-	"生命之气息": 1, "火之气息": 1, "深渊的气息": 1, "水之精灵": 1, "火之精灵": 1, "风之精灵": 1, "台风之精灵": 1, "地之精灵": 1,
-	"熔岩精灵": 1, "冰柱": 1, "召唤台风": 1, "高级攻城兵器": 1, "超大型连射炮": 1, "大型连射炮": 1,
-}
-
 func isPlayerValid(name string) bool {
 	if name == "" {
 		return false
@@ -388,8 +382,18 @@ func isTargetValid(name string) bool {
 	if name == "" {
 		return false
 	}
-	if name == "训练用稻草人" || name == "变异的RA-98c" {
+	if _, ok := invalidTarget[name]; ok {
 		return false
 	}
 	return true
+}
+
+var invalidPlayer = map[string]int{
+	"太古气息": 1, "地之气息": 1, "水之气息": 1, "旋风之气息": 1, "风之气息": 1, "高洁气息": 1, "神圣的气息": 1, "治愈之气息": 1,
+	"生命之气息": 1, "火之气息": 1, "深渊的气息": 1, "水之精灵": 1, "火之精灵": 1, "风之精灵": 1, "台风之精灵": 1, "地之精灵": 1,
+	"熔岩精灵": 1, "冰柱": 1, "召唤台风": 1, "高级攻城兵器": 1, "超大型连射炮": 1, "大型连射炮": 1, "飞行祝福": 1,
+}
+
+var invalidTarget = map[string]int{
+	"训练用稻草人": 1, "变异的RA-98c": 1,
 }

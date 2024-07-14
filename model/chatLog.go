@@ -30,7 +30,7 @@ func (r ChatLog) BatchInsert(items []ChatLog) error {
 	return DB().Exec(sql).Error
 }
 
-func (r ChatLog) GetAll(st, et string, page, pageSize int, player, target, skill, sort, value string) ([]ChatLog, int, error) {
+func (r ChatLog) GetAll(st, et string, page, pageSize int, player, target, skill, sort, value, banPlayer string) ([]ChatLog, int, error) {
 	var results []ChatLog
 	query := DB().Model(&ChatLog{})
 	if st != "" {
@@ -73,6 +73,11 @@ func (r ChatLog) GetAll(st, et string, page, pageSize int, player, target, skill
 			valueInt, _ := strconv.Atoi(value)
 			query = query.Where("value > ?", valueInt)
 		}
+		query = query.Where("target != ''")
+	}
+	if banPlayer != "" {
+		banPlayers := strings.Split(banPlayer, ",")
+		query = query.Where("player not in (?)", banPlayers)
 	}
 
 	var count int
@@ -91,6 +96,49 @@ func (r ChatLog) GetRanks() ([]Rank, error) {
 	sql := "select player,count(DISTINCT(skill)) count,time from aion_chat_log where skill not in ('','kill','killed') " +
 		"and value > 0 group by player,time HAVING count >= 3"
 	var results []Rank
+	err := DB().Raw(sql).Find(&results).Error
+	if err != nil {
+		return nil, err
+	} else {
+		return results, nil
+	}
+}
+
+type SkillDamage struct {
+	Skill    string  `json:"skill"`
+	Count    int     `json:"count"`
+	Damage   int     `json:"damage"`
+	Average  float64 `json:"average"`
+	Critical float64 `json:"critical"`
+}
+
+func (r ChatLog) GetClassTop(class, player string) ([]*SkillDamage, error) {
+	sql := "select skill,count(1) count,max(value) damage,avg(value)  average from aion_chat_log where value > 0 and target != ''"
+	if player != "" {
+		sql += " and player = '" + player + "'"
+	}
+	sql += fmt.Sprintf(" and skill in (select skill from aion_player_skill where class = %s) group by skill order by damage desc", class)
+	var results []*SkillDamage
+	err := DB().Raw(sql).Find(&results).Error
+	if err != nil {
+		return nil, err
+	} else {
+		return results, nil
+	}
+}
+
+func (r ChatLog) GetCriticalRatio(player string) ([]SkillDamage, error) {
+	condition := "target != '' and raw_msg LIKE '致命一击%'"
+	if player != "" {
+		condition += " and player = '" + player + "'"
+	}
+	sql := fmt.Sprintf("SELECT a.skill, a.count / b.total critical FROM (SELECT skill, count(1) count FROM aion_chat_log "+
+		"WHERE %s GROUP BY skill) a JOIN (SELECT skill, count(1) total FROM aion_chat_log where target != ''", condition)
+	if player != "" {
+		sql += " and player = '" + player + "'"
+	}
+	sql += " GROUP BY skill) b ON a.skill = b.skill"
+	var results []SkillDamage
 	err := DB().Raw(sql).Find(&results).Error
 	if err != nil {
 		return nil, err

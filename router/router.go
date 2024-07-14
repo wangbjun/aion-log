@@ -16,7 +16,8 @@ func Route(Router *gin.Engine) {
 			v1.GET("/logs", BattleController.GetAll).
 				GET("/ranks", BattleController.GetRank).
 				GET("/players", BattleController.GetPlayers).
-				GET("/timeline", BattleController.GetTimeline)
+				GET("/timeline", BattleController.GetTimeline).
+				GET("/classTop", BattleController.GetClassTop)
 		}
 	}
 }
