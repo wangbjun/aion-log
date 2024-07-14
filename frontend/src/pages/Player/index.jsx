@@ -31,7 +31,7 @@ class Player extends React.Component {
           return a.name.localeCompare(b.name)
         },
         render: this.renderName,
-        width: "30%",
+        width: "25%",
       },
       {
         title: "种族",
@@ -57,7 +57,7 @@ class Player extends React.Component {
         title: "职业",
         dataIndex: 'class',
         key: 'class',
-        width: "10%",
+        width: "8%",
         sorter: function (a, b) {
           return a.class - b.class
         },
@@ -69,16 +69,28 @@ class Player extends React.Component {
         title: "技能次数",
         dataIndex: 'skill_count',
         key: 'skill_count',
-        width: "10%",
+        width: "8%",
         sorter: function (a, b) {
           return a.skill_count - b.skill_count
         },
       },
       {
+        title: "暴击率",
+        dataIndex: 'critical_ratio',
+        key: 'critical_ratio',
+        width: "8%",
+        sorter: function (a, b) {
+          return a.critical_ratio - b.critical_ratio
+        },
+        render: function (value) {
+          return (value*100).toFixed(1)+"%"
+        }
+      },
+      {
         title: "击杀数",
         dataIndex: 'kill_count',
         key: 'kill_count',
-        width: "10%",
+        width: "8%",
         sorter: function (a, b) {
           return a.kill_count - b.kill_count
         },
@@ -87,7 +99,7 @@ class Player extends React.Component {
         title: "死亡数",
         dataIndex: 'death_count',
         key: 'death_count',
-        width: "10%",
+        width: "8%",
         sorter: function (a, b) {
           return a.death_count - b.death_count
         },

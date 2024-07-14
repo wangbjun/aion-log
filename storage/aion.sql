@@ -14,20 +14,22 @@ CREATE TABLE `aion_chat_log`
     KEY `idx_target` (`target`),
     KEY `idx_value` (`value`)
 ) ENGINE = InnoDB
+  AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci;
 
 CREATE TABLE `aion_player_info`
 (
-    `id`    int NOT NULL AUTO_INCREMENT,
-    `name`  varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-    `type`  int                                                           DEFAULT NULL,
-    `class` int                                                           DEFAULT NULL,
-    `time`  datetime                                                      DEFAULT NULL,
+    `id`             int NOT NULL AUTO_INCREMENT,
+    `name`           varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+    `type`           int                                                           DEFAULT NULL,
+    `class`          int                                                           DEFAULT NULL,
+    `time`           datetime                                                      DEFAULT NULL,
+    `critical_ratio` double                                                        DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `index_uniq` (`name`, `type`)
 ) ENGINE = InnoDB
-  AUTO_INCREMENT = 6458
+  AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci;
 
@@ -40,14 +42,15 @@ CREATE TABLE `aion_player_rank`
     PRIMARY KEY (`id`),
     UNIQUE KEY `index_uniq` (`player`, `count`, `time`)
 ) ENGINE = InnoDB
-  AUTO_INCREMENT = 6002
+  AUTO_INCREMENT = 1
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci;
 
 CREATE TABLE `aion_player_skill`
 (
-    `skill` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-    `class` int                                                           NOT NULL,
+    `skill`          varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+    `critical_ratio` double DEFAULT NULL,
+    `class`          int                                                           NOT NULL,
     UNIQUE KEY `aion_player_skill_pk` (`class`, `skill`)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
@@ -60,4 +63,5 @@ CREATE TABLE `aion_timeline`
     `type`  int      NOT NULL DEFAULT '0'
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
-  COLLATE = utf8mb4_general_ci
+  COLLATE = utf8mb4_general_ci;
+

@@ -62,7 +62,14 @@ func (r ClassifyService) Run() error {
 		}
 	}
 
-	return nil
+	err = r.updatePlayerCritical()
+	if err != nil {
+		return err
+	}
+
+	err = r.updateSkillCritical()
+
+	return err
 }
 
 func (r ClassifyService) updateBright() error {
@@ -147,4 +154,48 @@ func (r ClassifyService) updateUnknown() error {
 	}
 
 	return err
+}
+
+func (r ClassifyService) updatePlayerCritical() error {
+	var result []struct {
+		Player string
+		Ratio  float64
+	}
+	playerCriticalSql := "SELECT a.player, a.count/b.total as ratio FROM " +
+		"(SELECT player, count(1) count FROM aion_chat_log WHERE target != '' and " +
+		"skill not in ('attack','kill','killed') and raw_msg LIKE '致命一击%' GROUP BY player) a JOIN " +
+		"(SELECT player, count(1) total FROM aion_chat_log where target != '' and " +
+		"skill not in ('attack','kill','killed') GROUP BY player) b ON a.player = b.player"
+	err := model.DB().Raw(playerCriticalSql).Find(&result).Error
+	if err != nil {
+		return err
+	}
+	for _, res := range result {
+		err = model.DB().Exec("update aion_player_info set critical_ratio = ? where name = ?", res.Ratio, res.Player).Error
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r ClassifyService) updateSkillCritical() error {
+	var result []struct {
+		Skill string
+		Ratio float64
+	}
+	skillCriticalSql := "SELECT a.skill, a.count / b.total ratio FROM (SELECT skill, count(1) count FROM aion_chat_log " +
+		"WHERE target != '' and raw_msg LIKE '致命一击%' group BY skill) a JOIN (SELECT skill, count(1) total FROM " +
+		"aion_chat_log where target != '' GROUP BY skill) b ON a.skill = b.skill"
+	err := model.DB().Raw(skillCriticalSql).Find(&result).Error
+	if err != nil {
+		return err
+	}
+	for _, res := range result {
+		err = model.DB().Exec("update aion_player_skill set critical_ratio = ? where skill = ?", res.Ratio, res.Skill).Error
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

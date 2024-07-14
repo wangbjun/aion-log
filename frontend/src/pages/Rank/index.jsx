@@ -13,7 +13,7 @@ const {Option} = Select
   state => ({
     ...state.global,
     loading: state.loading.effects["global/fetchRankList"],
-    loadingDetail: state.loading.effects["global/fetchLogList"]
+    loadingDetail: state.loading.effects["global/fetchLogData"]
   })
 )
 class Rank extends React.Component {
@@ -256,9 +256,9 @@ class Rank extends React.Component {
   }
 
   render() {
-    const {rankList, loading, logList, loadingDetail} = this.props
+    const {rankList, loading, logData, loadingDetail} = this.props
     const {isModalVisible, searchPlayer} = this.state
-    const listData = logList.list && logList.list.filter(v => {
+    const listData = logData.list && logData.list.filter(v => {
       return v.player === searchPlayer
     })
     return (

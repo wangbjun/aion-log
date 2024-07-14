@@ -7,14 +7,15 @@ import (
 )
 
 type Player struct {
-	Id         int       `json:"id"`
-	Name       string    `json:"name"`
-	Type       int       `json:"type"`
-	Class      int       `json:"class"`
-	SkillCount int       `json:"skill_count"`
-	KillCount  int       `json:"kill_count"`
-	DeathCount int       `json:"death_count"`
-	Time       time.Time `json:"time"`
+	Id            int       `json:"id"`
+	Name          string    `json:"name"`
+	Type          int       `json:"type"`
+	Class         int       `json:"class"`
+	SkillCount    int       `json:"skill_count"`
+	KillCount     int       `json:"kill_count"`
+	DeathCount    int       `json:"death_count"`
+	CriticalRatio float64   `json:"critical_ratio"`
+	Time          time.Time `json:"time"`
 }
 
 const (

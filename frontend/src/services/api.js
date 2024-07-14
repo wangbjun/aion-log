@@ -1,6 +1,6 @@
 import request from '@/utils/request';
 
-export async function queryLogList(params) {
+export async function queryLogData(params) {
   return request('/api/v1/logs', {
     params,
     method: "GET"

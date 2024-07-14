@@ -3,11 +3,11 @@ package service
 import "aion/model"
 
 type CacheService struct {
-	cachePlayers  map[string][]*model.Player
-	cacheRank     map[string][]model.RankResult
-	cachePlayer   map[string]*model.Player
-	cacheClass    map[string][]*model.SkillDamage
-	cacheCritical map[string]model.SkillDamage
+	cachePlayers map[string][]*model.Player
+	cacheRank    map[string][]model.RankResult
+	cachePlayer  map[string]*model.Player
+	cacheClass   map[string][]*model.SkillDamage
+	cacheSkill   map[string]model.PlayerSkill
 }
 
 var defaultCacheService *CacheService
@@ -15,11 +15,11 @@ var defaultCacheService *CacheService
 func NewCacheService() *CacheService {
 	if defaultCacheService == nil {
 		defaultCacheService = &CacheService{
-			cachePlayers:  make(map[string][]*model.Player),
-			cacheRank:     make(map[string][]model.RankResult),
-			cachePlayer:   make(map[string]*model.Player),
-			cacheClass:    make(map[string][]*model.SkillDamage),
-			cacheCritical: make(map[string]model.SkillDamage),
+			cachePlayers: make(map[string][]*model.Player),
+			cacheRank:    make(map[string][]model.RankResult),
+			cachePlayer:  make(map[string]*model.Player),
+			cacheClass:   make(map[string][]*model.SkillDamage),
+			cacheSkill:   make(map[string]model.PlayerSkill),
 		}
 	}
 
@@ -35,12 +35,12 @@ func (s *CacheService) Load() error {
 		s.cachePlayer[player.Name] = player
 	}
 
-	criticalRatio, err := model.ChatLog{}.GetCriticalRatio("")
+	skills, err := model.PlayerSkill{}.GetAll()
 	if err != nil {
 		return err
 	}
-	for _, critical := range criticalRatio {
-		s.cacheCritical[critical.Skill] = critical
+	for _, skill := range skills {
+		s.cacheSkill[skill.Skill] = skill
 	}
 
 	return nil
@@ -48,6 +48,11 @@ func (s *CacheService) Load() error {
 
 func (s *CacheService) GetPlayer(name string) (*model.Player, bool) {
 	player, ok := s.cachePlayer[name]
+	return player, ok
+}
+
+func (s *CacheService) GetSkill(skill string) (model.PlayerSkill, bool) {
+	player, ok := s.cacheSkill[skill]
 	return player, ok
 }
 
@@ -75,9 +80,4 @@ func (s *CacheService) GetClassTop(key string) ([]*model.SkillDamage, bool) {
 
 func (s *CacheService) SetClassTop(key string, data []*model.SkillDamage) {
 	s.cacheClass[key] = data
-}
-
-func (s *CacheService) GetSkillCritical(skill string) (float64, bool) {
-	ratio, ok := s.cacheCritical[skill]
-	return ratio.Critical, ok
 }

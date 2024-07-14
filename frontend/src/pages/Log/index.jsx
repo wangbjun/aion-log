@@ -6,6 +6,7 @@ import moment from "moment";
 import {parse} from 'querystring'
 import {getTypeColor, playerPros} from "@/utils/utils";
 import "../../global.less"
+import {queryPlayer} from "@/services/api";
 
 const {RangePicker} = DatePicker
 const {Option} = Select
@@ -13,7 +14,7 @@ const {Option} = Select
 @connect(
   state => ({
     ...state.global,
-    loading: state.loading.effects["global/fetchLogList"],
+    loading: state.loading.effects["global/fetchLogData"],
     loadingTop: state.loading.effects["global/fetchClassTop"]
   })
 )
@@ -98,7 +99,7 @@ class Log extends React.Component {
         title: "次数",
         dataIndex: 'count',
         key: 'count',
-        defaultSortOrder: "decend",
+        defaultSortOrder: "descend",
         sorter: function (a, b) {
           return a.count - b.count
         },
@@ -181,9 +182,8 @@ class Log extends React.Component {
     let banPlayer = fieldValue.banPlayer && fieldValue.banPlayer.join(",")
     const {page, pageSize, valueGe, valueLe, queryClass} = this.state
 
-    this.queryClassTop(queryClass, player)
-    dispatch({
-      type: 'global/fetchLogList',
+    await dispatch({
+      type: 'global/fetchLogData',
       payload: {
         page,
         pageSize,
@@ -194,16 +194,16 @@ class Log extends React.Component {
         sort: fieldValue.sort,
       },
     });
+    this.queryClassTop(queryClass)
   }
 
-  queryClassTop = (queryClass, queryPlayer ) => {
+  queryClassTop = (queryClass ) => {
     const {dispatch} = this.props
     this.setState({queryClass})
     dispatch({
       type: 'global/fetchClassTop',
       payload: {
-        class: queryClass,
-        player: queryPlayer
+        class: queryClass
       },
     });
   }
@@ -298,12 +298,12 @@ class Log extends React.Component {
 
   render() {
     const {page, pageSize, queryClass} = this.state
-    const {logList, loading, classTop, loadingTop} = this.props
+    const {logData, loading, classTop, loadingTop} = this.props
     const pagination = {
       current: page,
       pageSize: pageSize,
       defaultPageSize: 50,
-      total: logList.total,
+      total: logData.total,
       pageSizeOptions: ['50', '100', '200', '500'],
       showTotal: (total) => `共${total}条记录`,
       onChange: async (page, pageSize) => {
@@ -316,7 +316,7 @@ class Log extends React.Component {
       if (index === 0) {
         return color
       }
-      if (record.time === logList.list[index - 1].time && record.player === logList.list[index - 1].player) {
+      if (record.time === logData.list[index - 1].time && record.player === logData.list[index - 1].player) {
         return color
       } else {
         if (color === "row-odd") {
@@ -335,7 +335,7 @@ class Log extends React.Component {
               <Card title="职业">
                 {
                   playerPros.slice(1).map(value => {
-                    return <p style={{textAlign: "center"}}>
+                    return <p style={{textAlign: "center"}} key={value.name}>
                       <img src={require("../../assets/" + value.logo)} onClick={()=>this.queryClassTop(value.class)}/>
                     </p>
                   })
@@ -368,7 +368,7 @@ class Log extends React.Component {
                   bordered
                   size="small"
                   columns={this.columns}
-                  dataSource={logList.list}
+                  dataSource={logData.list}
                   rowKey={(record) => {
                     return record.id
                   }}

@@ -56,15 +56,6 @@ func (r battleController) GetAll(ctx *gin.Context) {
 		r.Failed(ctx, Failed, err.Error())
 		return
 	}
-	playerMap := make(map[string]*model.Player)
-	players, err := model.Player{}.GetAll()
-	if err != nil {
-		r.Failed(ctx, Failed, err.Error())
-		return
-	}
-	for _, v := range players {
-		playerMap[v.Name] = v
-	}
 	var results []LogResult
 	for _, v := range data {
 		result := LogResult{
@@ -134,6 +125,7 @@ func (r battleController) GetPlayers(ctx *gin.Context) {
 			v.Id = existed.Id
 			v.Type = existed.Type
 			v.Class = existed.Class
+			v.CriticalRatio = existed.CriticalRatio
 			v.Time = existed.Time
 		}
 	}
@@ -142,14 +134,14 @@ func (r battleController) GetPlayers(ctx *gin.Context) {
 		Target string
 		Count  int
 	}
-	skillCountSql := fmt.Sprintf("select player,count(DISTINCT skill, time) as count from aion_chat_log " +
-		"where skill not in ('','kill','killed') and time >= '" + st + "' AND time <= '" + et + "' group by player")
+	skillCountSql := fmt.Sprintf("select player,count(1) as count from aion_chat_log " +
+		"where target != '' and skill not in ('attack','kill','killed') and time >= '" + st + "' AND time <= '" + et + "' group by player")
 	err = model.DB().Raw(skillCountSql).Find(&result).Error
 	if err != nil {
 		r.Failed(ctx, Failed, err.Error())
 		return
 	}
-	var playerSkillCount = make(map[string]int)
+	var playerSkillCount = make(map[string]int, 2000)
 	for _, v := range result {
 		playerSkillCount[v.Player] = v.Count
 	}
@@ -246,20 +238,8 @@ func (r battleController) GetClassTop(ctx *gin.Context) {
 		return
 	}
 	for _, res := range result {
-		if player != "" {
-			criticalRatio, err := model.ChatLog{}.GetCriticalRatio(player)
-			if err != nil {
-				continue
-			}
-			for _, ratio := range criticalRatio {
-				if res.Skill == ratio.Skill {
-					res.Critical = ratio.Critical
-				}
-			}
-		} else {
-			if ratio, ok := r.cache.GetSkillCritical(res.Skill); ok {
-				res.Critical = ratio
-			}
+		if skill, ok := r.cache.GetSkill(res.Skill); ok {
+			res.Critical = skill.CriticalRatio
 		}
 	}
 	if len(result) != 0 {
