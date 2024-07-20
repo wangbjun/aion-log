@@ -23,7 +23,6 @@ var (
 	regAttackA = regexp.MustCompile("(\\S+)使用(.+)技能，对(\\S+)造成了(\\S+)的伤害")
 	regAttackB = regexp.MustCompile("(\\S+)给(\\S+)造成了(\\S+)的伤害")
 	regAttackC = regexp.MustCompile("(\\S+)使用(.+)技能，")
-	regValue   = regexp.MustCompile("(\\d{1,3}(,\\d{3})*)")
 )
 
 type Parser struct {
@@ -109,7 +108,6 @@ func (r *Parser) Run(fileName string) error {
 func (r *Parser) processLog(wg *sync.WaitGroup) {
 	defer wg.Done()
 	logItems := make([]model.ChatLog, 0, 500)
-	model.ChatLog{}.RemoveIndex()
 	for {
 		chatLog, ok := <-r.resultLog
 		if !ok {
@@ -125,7 +123,6 @@ func (r *Parser) processLog(wg *sync.WaitGroup) {
 		}
 	}
 	model.ChatLog{}.BatchInsert(logItems)
-	model.ChatLog{}.AddIndex()
 }
 
 func (r *Parser) processPlayer(wg *sync.WaitGroup) {
@@ -252,20 +249,6 @@ func (r *Parser) parseAttackC(line string) error {
 	)
 	if !isPlayerValid(player) {
 		return nil
-	}
-
-	value := 0
-	matchValue := regValue.FindStringSubmatch(line[22:])
-	if len(matchValue) > 1 && matchValue[1] != "1" {
-		value = formatValue(matchValue[1])
-	}
-
-	r.resultLog <- model.ChatLog{
-		Player: player,
-		Skill:  skill,
-		Value:  value,
-		Time:   formatTime(line),
-		RawMsg: line[22:],
 	}
 	r.resultPlayer <- model.Player{
 		Name:  player,

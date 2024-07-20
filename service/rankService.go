@@ -12,11 +12,6 @@ func NewRankService() *RankService {
 }
 
 func (r RankService) Run() error {
-	err := model.DB().Exec("truncate table aion_player_rank").Error
-	if err != nil {
-		return fmt.Errorf("clean table error:" + err.Error())
-	}
-
 	ranks, err := model.ChatLog{}.GetRanks()
 	if err != nil {
 		return fmt.Errorf("GetRanks Failed: " + err.Error())

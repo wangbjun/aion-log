@@ -130,8 +130,7 @@ class Player extends React.Component {
   query = async () => {
     const {dispatch} = this.props
     const fieldValue = this.formRef.current.getFieldValue();
-    let st = moment().subtract(6, 'day').startOf('day').format("YYYY-MM-DD HH:mm:ss")
-    let et = moment().endOf('day').format("YYYY-MM-DD HH:mm:ss")
+    let st, et
     if (fieldValue.time) {
       st = fieldValue.time[0].format("YYYY-MM-DD HH:mm:ss")
       et = fieldValue.time[1].format("YYYY-MM-DD HH:mm:ss")
@@ -380,7 +379,6 @@ class Player extends React.Component {
         <Form.Item label="时间" name="time">
           <RangePicker
             format={dateFormat}
-            defaultValue={[moment().subtract(6, 'day').startOf('day'), moment().endOf('day')]}  // 设置默认值为最近7天
             ranges={{
               今天: [moment().startOf('day'), moment().endOf('day')],
               昨天: [moment().subtract(1, 'day').startOf('day'), moment().subtract(1, 'day').endOf('day')],

@@ -37,7 +37,7 @@ func initConfig() {
 		return
 	}
 	zlog.Init()
-	model.Init()
+	model.Init(false)
 }
 
 func Execute() {

@@ -161,7 +161,7 @@ func (r ClassifyService) updatePlayerCritical() error {
 		Player string
 		Ratio  float64
 	}
-	playerCriticalSql := "SELECT a.player, a.count/b.total as ratio FROM " +
+	playerCriticalSql := "SELECT a.player, (a.count * 1.0)/b.total as ratio FROM " +
 		"(SELECT player, count(1) count FROM aion_chat_log WHERE target != '' and " +
 		"skill not in ('attack','kill','killed') and raw_msg LIKE '致命一击%' GROUP BY player) a JOIN " +
 		"(SELECT player, count(1) total FROM aion_chat_log where target != '' and " +
@@ -184,7 +184,7 @@ func (r ClassifyService) updateSkillCritical() error {
 		Skill string
 		Ratio float64
 	}
-	skillCriticalSql := "SELECT a.skill, a.count / b.total ratio FROM (SELECT skill, count(1) count FROM aion_chat_log " +
+	skillCriticalSql := "SELECT a.skill, (a.count * 1.0) / b.total ratio FROM (SELECT skill, count(1) count FROM aion_chat_log " +
 		"WHERE target != '' and raw_msg LIKE '致命一击%' group BY skill) a JOIN (SELECT skill, count(1) total FROM " +
 		"aion_chat_log where target != '' GROUP BY skill) b ON a.skill = b.skill"
 	err := model.DB().Raw(skillCriticalSql).Find(&result).Error

@@ -36,9 +36,8 @@ type RankResult struct {
 
 func (r Rank) GetAll(level string) ([]RankResult, error) {
 	var results []RankResult
-	sql := "select player,SUBSTRING_INDEX(GROUP_CONCAT(time ORDER BY time desc),',',12) times, count(1) counts " +
-		"from aion_player_rank where count = " + level
-	sql += " group by player HAVING counts >= 5"
+	sql := fmt.Sprintf("SELECT player, GROUP_CONCAT(time ORDER BY time DESC) AS times, COUNT(time) AS counts FROM"+
+		" (SELECT player, time FROM aion_player_rank WHERE count = %s ORDER BY player, time DESC ) GROUP BY player HAVING counts >= 5", level)
 	err := DB().Raw(sql).Find(&results).Error
 	return results, err
 }

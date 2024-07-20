@@ -60,9 +60,13 @@ func (r Player) GetAll() ([]*Player, error) {
 
 func (r Player) GetByTime(st, et string) ([]*Player, error) {
 	var results []*Player
-	sql := fmt.Sprintf("select distinct name from (select player as name from aion_chat_log where "+
-		"time >= '%s' AND time <= '%s' union select target as name from aion_chat_log where "+
-		"target != '' and time >= '%s' AND time <= '%s') as result", st, et, st, et)
+	sql1 := "select player as name from aion_chat_log"
+	sql2 := "select target as name from aion_chat_log"
+	if st != "" && et != "" {
+		sql1 += fmt.Sprintf(" where time >= '%s' and time <= '%s'", st, et)
+		sql2 += fmt.Sprintf(" where time >= '%s' and time <= '%s'", st, et)
+	}
+	sql := fmt.Sprintf("select name from (%s union %s) as results", sql1, sql2)
 	err := DB().Raw(sql).Find(&results).Error
 	return results, err
 }

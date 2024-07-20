@@ -2,7 +2,6 @@ package service
 
 import (
 	"aion/model"
-	"fmt"
 )
 
 type TimelineService struct{}
@@ -12,11 +11,7 @@ func NewTimelineService() *TimelineService {
 }
 
 func (r TimelineService) Run() error {
-	err := model.DB().Exec("truncate table aion_timeline").Error
-	if err != nil {
-		return fmt.Errorf("clean table error:" + err.Error())
-	}
-	err = r.runKill()
+	err := r.runKill()
 	if err != nil {
 		return err
 	}

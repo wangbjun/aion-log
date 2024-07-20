@@ -104,10 +104,7 @@ func (r battleController) GetPlayers(ctx *gin.Context) {
 		st, _ = ctx.GetQuery("st")
 		et, _ = ctx.GetQuery("et")
 	)
-	if st == "" || et == "" {
-		r.Failed(ctx, ParamError, "请选择时间范围")
-		return
-	}
+
 	var key = "player_" + st + "_" + et
 	if cached, ok := r.cache.GetPlayers(key); ok {
 		r.Success(ctx, "ok", cached)
@@ -135,7 +132,11 @@ func (r battleController) GetPlayers(ctx *gin.Context) {
 		Count  int
 	}
 	skillCountSql := fmt.Sprintf("select player,count(1) as count from aion_chat_log " +
-		"where target != '' and skill not in ('attack','kill','killed') and time >= '" + st + "' AND time <= '" + et + "' group by player")
+		"where target != '' and skill not in ('attack','kill','killed')")
+	if st != "" && et != "" {
+		skillCountSql += fmt.Sprintf(" and time >= '%s' and time <= '%s'", st, et)
+	}
+	skillCountSql += " group by player"
 	err = model.DB().Raw(skillCountSql).Find(&result).Error
 	if err != nil {
 		r.Failed(ctx, Failed, err.Error())
@@ -146,8 +147,12 @@ func (r battleController) GetPlayers(ctx *gin.Context) {
 		playerSkillCount[v.Player] = v.Count
 	}
 
-	err = model.DB().Raw("select player,target,count(1) count from aion_chat_log " +
-		"where skill = 'kill' and time >= '" + st + "' AND time <= '" + et + "' group by player,target").Find(&result).Error
+	playerCountSql := "select player,target,count(1) count from aion_chat_log where skill = 'kill'"
+	if st != "" && et != "" {
+		playerCountSql += fmt.Sprintf(" and time >= '%s' and time <= '%s'", st, et)
+	}
+	playerCountSql += " group by player,target"
+	err = model.DB().Raw(playerCountSql).Find(&result).Error
 	if err != nil {
 		r.Failed(ctx, Failed, err.Error())
 		return
@@ -159,8 +164,12 @@ func (r battleController) GetPlayers(ctx *gin.Context) {
 		playerDeathCount[v.Target] += v.Count
 	}
 
-	err = model.DB().Raw("select player,target,count(1) count from aion_chat_log " +
-		"where skill = 'killed' and time >= '" + st + "' AND time <= '" + et + "' group by player,target").Find(&result).Error
+	playerCountSql = "select player,target,count(1) count from aion_chat_log where skill = 'killed'"
+	if st != "" && et != "" {
+		playerCountSql += fmt.Sprintf(" and time >= '%s' and time <= '%s'", st, et)
+	}
+	playerCountSql += " group by player,target"
+	err = model.DB().Raw(playerCountSql).Find(&result).Error
 	if err != nil {
 		r.Failed(ctx, Failed, err.Error())
 		return
@@ -187,10 +196,6 @@ func (r battleController) GetTimeline(ctx *gin.Context) {
 		st, _ = ctx.GetQuery("st")
 		et, _ = ctx.GetQuery("et")
 	)
-	if st == "" || et == "" {
-		r.Failed(ctx, ParamError, "请选择时间范围")
-		return
-	}
 	killTime, err := model.Timeline{}.GetAll(st, et, 1)
 	if err != nil {
 		r.Failed(ctx, Failed, err.Error())

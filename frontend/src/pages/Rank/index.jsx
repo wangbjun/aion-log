@@ -145,11 +145,15 @@ class Rank extends React.Component {
   }
 
   renderTimes = (value, row) => {
+    let times = value.split(',')
+    if (times.length > 12) {
+      times = times.slice(0, 12);
+    }
     return (
       <div>
         <div>
           {
-            value.split(',').map((v) => {
+            times.map((v) => {
               return (<Tag color="green" onClick={() => this.searchRank({time: v, player: row.player})} key={v}>
                 {moment(v).format("YYYY-MM-DD HH:mm:ss")}</Tag>)
             })
@@ -162,7 +166,7 @@ class Rank extends React.Component {
     const {dispatch} = this.props
     this.setState({isModalVisible: true, searchPlayer: record.player})
     dispatch({
-      type: 'global/fetchLogList',
+      type: 'global/fetchLogData',
       payload: {
         st: record.time,
         et: record.time,

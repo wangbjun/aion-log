@@ -23,18 +23,9 @@ var parseCmd = &cobra.Command{
 			cmd.Usage()
 			return
 		}
-		err := model.DB().Exec("truncate table aion_chat_log").Error
-		if err != nil {
-			cmd.PrintErrln(err)
-			return
-		}
-		err = model.DB().Exec("truncate table aion_player_info").Error
-		if err != nil {
-			cmd.PrintErrln(err)
-			return
-		}
+		model.Init(true)
 		parser := service.NewParseService()
-		err = parser.Run(logFile)
+		err := parser.Run(logFile)
 		if err != nil {
 			cmd.PrintErrln(err)
 			return

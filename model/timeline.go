@@ -27,6 +27,10 @@ func (r Timeline) BatchInsert(items []Timeline) error {
 
 func (r Timeline) GetAll(st, et string, tp int) ([]Timeline, error) {
 	var results []Timeline
-	err := DB().Where("time >= ? and time <= ? and type = ?", st, et, tp).Find(&results).Error
+	condition := fmt.Sprintf("type = %d", tp)
+	if st != "" && et != "" {
+		condition += fmt.Sprintf(" and time >= '%s' and time <= '%s'", st, et)
+	}
+	err := DB().Where(condition).Find(&results).Error
 	return results, err
 }

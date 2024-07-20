@@ -30,7 +30,7 @@ func (r ChatLog) BatchInsert(items []ChatLog) error {
 	return DB().Exec(sql).Error
 }
 
-func (r ChatLog) GetAll(st, et string, page, pageSize int, player, target, skill, sort, value, banPlayer string) ([]ChatLog, int, error) {
+func (r ChatLog) GetAll(st, et string, page, pageSize int, player, target, skill, sort, value, banPlayer string) ([]ChatLog, int64, error) {
 	var results []ChatLog
 	query := DB().Model(&ChatLog{})
 	if st != "" {
@@ -80,7 +80,7 @@ func (r ChatLog) GetAll(st, et string, page, pageSize int, player, target, skill
 		query = query.Where("player not in (?)", banPlayers)
 	}
 
-	var count int
+	var count int64
 	err := query.Count(&count).Error
 	if err != nil {
 		return results, 0, err
@@ -145,21 +145,4 @@ func (r ChatLog) GetCriticalRatio(player string) ([]SkillDamage, error) {
 	} else {
 		return results, nil
 	}
-}
-
-func (r ChatLog) AddIndex() error {
-	return DB().Exec("ALTER TABLE `aion_chat_log` " +
-		"ADD KEY `idx_player_skill_time` (`player`,`skill`,`time`)," +
-		"ADD KEY `idx_skill` (`skill`)," +
-		"ADD KEY `idx_time` (`time`)," +
-		"ADD KEY `idx_target` (`target`)," +
-		"ADD KEY `idx_value` (`value`)").Error
-}
-
-func (r ChatLog) RemoveIndex() error {
-	DB().Exec("drop index idx_player_skill_time on aion_chat_log")
-	DB().Exec("drop index idx_skill on aion_chat_log")
-	DB().Exec("drop index idx_target on aion_chat_log")
-	DB().Exec("drop index idx_time on aion_chat_log")
-	return DB().Exec("drop index idx_value on aion_chat_log").Error
 }
