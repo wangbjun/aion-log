@@ -4,8 +4,6 @@ import (
 	"aion/model"
 	"aion/service"
 	"fmt"
-	"os"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"time"
@@ -200,32 +198,38 @@ func (r battleController) GetClassTop(ctx *gin.Context) {
 }
 
 func (r battleController) ImportLog(ctx *gin.Context) {
-	file, err := ctx.FormFile("file")
+	fileHeader, err := ctx.FormFile("file")
 	if err != nil {
 		r.Failed(ctx, ParamError, "missing log file")
 		return
 	}
 
-	uploadDir := filepath.Join("storage", "uploads")
-	if err := os.MkdirAll(uploadDir, 0755); err != nil {
-		r.Failed(ctx, Failed, err.Error())
+	if status, ok := service.StartImportStatus(fileHeader.Filename, fileHeader.Size); !ok {
+		r.Failed(ctx, Failed, fmt.Sprintf("已有导入任务正在处理：%s", status.FileName))
 		return
 	}
 
-	saveName := fmt.Sprintf("%d_%s", time.Now().UnixNano(), filepath.Base(file.Filename))
-	savePath := filepath.Join(uploadDir, saveName)
-	if err := ctx.SaveUploadedFile(file, savePath); err != nil {
-		r.Failed(ctx, Failed, err.Error())
-		return
-	}
-
-	err = service.ImportChatLog(savePath)
+	file, err := fileHeader.Open()
 	if err != nil {
+		service.FinishImportStatus(err)
+		r.Failed(ctx, Failed, err.Error())
+		return
+	}
+	defer file.Close()
+
+	err = service.ImportChatLog(file, fileHeader.Filename)
+	if err != nil {
+		service.FinishImportStatus(err)
 		r.Failed(ctx, Failed, "importChatLog failed: "+err.Error())
 		return
 	}
 
+	service.FinishImportStatus(nil)
 	r.Success(ctx, "ok", nil)
+}
+
+func (r battleController) GetImportStatus(ctx *gin.Context) {
+	r.Success(ctx, "ok", service.GetImportStatus())
 }
 
 func mergeTimes(data1, data2 []model.Timeline) []time.Time {

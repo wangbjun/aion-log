@@ -43,3 +43,9 @@ export async function importLogData(file) {
     method: "POST"
   });
 }
+
+export async function queryImportStatus() {
+  return request('/api/v1/logs/import/status', {
+    method: "GET"
+  });
+}

@@ -1,4 +1,4 @@
-import {Button, Card, DatePicker, Form, Input, Modal, Select, Table, Tag} from 'antd';
+import {Button, Card, Col, Form, Input, Modal, Row, Select, Statistic, Table, Tag} from 'antd';
 import React from 'react';
 import {PageContainer} from '@ant-design/pro-layout';
 import {connect} from "@/.umi/plugin-dva/exports";
@@ -6,7 +6,6 @@ import moment from "moment";
 import {Link} from "umi";
 import {getTypeColor, playerPros} from "@/utils/utils";
 
-const {RangePicker} = DatePicker
 const {Option} = Select
 
 @connect(
@@ -265,14 +264,50 @@ class Rank extends React.Component {
     const listData = logData.list && logData.list.filter(v => {
       return v.player === searchPlayer
     })
+    const list = rankList || []
+    const maxCounts = list.length ? Math.max(...list.map(item => item.counts || 0)) : 0
+    const averageCounts = list.length
+      ? (list.reduce((sum, item) => sum + (item.counts || 0), 0) / list.length).toFixed(1)
+      : 0
+    const levelValue = this.formRef.current && this.formRef.current.getFieldValue("level")
+    const levelName = {3: "黄金", 4: "钻石", 5: "王者"}[levelValue || "3"]
     return (
-      <PageContainer>
-        <Card extra={this.searchForm()} >
+      <PageContainer title={false}>
+        <Card className="battle-toolbar">
+          {this.searchForm()}
+        </Card>
+        <Row gutter={[12, 12]} className="battle-section-card">
+          <Col xs={12} md={6}>
+            <Card className="battle-stat-card">
+              <Statistic title="上榜玩家" value={list.length}/>
+            </Card>
+          </Col>
+          <Col xs={12} md={6}>
+            <Card className="battle-stat-card">
+              <Statistic title="最高次数" value={maxCounts}/>
+            </Card>
+          </Col>
+          <Col xs={12} md={6}>
+            <Card className="battle-stat-card">
+              <Statistic title="平均次数" value={averageCounts}/>
+            </Card>
+          </Col>
+          <Col xs={12} md={6}>
+            <Card className="battle-stat-card">
+              <Statistic title="当前规则" value={levelName}/>
+            </Card>
+          </Col>
+        </Row>
+        <Card
+          title="异常玩家列表"
+          className="battle-section-card"
+          extra={<span className="battle-muted">点击时间点查看该秒日志上下文</span>}
+        >
           <Table
             bordered
             size="small"
             columns={this.columns}
-            dataSource={rankList}
+            dataSource={list}
             rowKey={(record) => {
               return record.time + record.player
             }}
@@ -282,15 +317,16 @@ class Rank extends React.Component {
               showTotal: (total) => `共${total}条记录`,
             }}
             loading={loading}
+            scroll={{x: 980}}
           />
         </Card>
         <Modal
-          title="日志详情"
+          title={`${searchPlayer || ''} 日志详情`}
           visible={isModalVisible}
           onCancel={() => {
             this.setState({isModalVisible: false})
           }}
-          width="60%"
+          width="76%"
           footer={null}
         >
           <Table
@@ -302,6 +338,7 @@ class Rank extends React.Component {
               return record.id
             }}
             loading={loadingDetail}
+            scroll={{x: 760}}
             pagination={{
               defaultPageSize: 20,
               hideOnSinglePage: true,

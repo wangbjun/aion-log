@@ -1,4 +1,4 @@
-import {Button, Card, Col, DatePicker, Form, Image, Input, Row, Select, Table, Tag} from 'antd';
+import {Button, Card, Col, DatePicker, Form, Input, Row, Select, Statistic, Table, Tag} from 'antd';
 import React from 'react';
 import {PageContainer} from '@ant-design/pro-layout';
 import {connect} from "@/.umi/plugin-dva/exports";
@@ -6,7 +6,6 @@ import moment from "moment";
 import {parse} from 'querystring'
 import {getTypeColor, playerPros} from "@/utils/utils";
 import "../../global.less"
-import {queryPlayer} from "@/services/api";
 
 const {RangePicker} = DatePicker
 const {Option} = Select
@@ -42,6 +41,11 @@ class Log extends React.Component {
         }
       },
       {
+        title: "数值",
+        dataIndex: 'value',
+        key: 'value',
+      },
+      {
         title: "战斗信息",
         dataIndex: 'raw_msg',
         key: 'raw_msg',
@@ -74,12 +78,7 @@ class Log extends React.Component {
           }
           return <div>{results}</div>;
         },
-      },
-      {
-        title: "数值",
-        dataIndex: 'value',
-        key: 'value',
-      },
+      }
     ];
 
     this.columnsClassTop = [
@@ -299,6 +298,8 @@ class Log extends React.Component {
   render() {
     const {page, pageSize, queryClass} = this.state
     const {logData, loading, classTop, loadingTop} = this.props
+    const logList = logData.list || []
+    const topSkill = classTop && classTop.length ? classTop[0].skill : '-'
     const pagination = {
       current: page,
       pageSize: pageSize,
@@ -328,58 +329,66 @@ class Log extends React.Component {
       return color
     }
     return (
-      <PageContainer>
-        <Card extra= {this.searchForm()}>
-          <Row>
-            <Col span={2}>
-              <Card title="职业">
+      <PageContainer title={false}>
+        <Card className="battle-toolbar">
+          {this.searchForm()}
+        </Card>
+        <Row gutter={[12, 12]}>
+          <Col xs={24} lg={6}>
+            <Card title="职业筛选" className="battle-section-card">
+              <div className="profession-grid">
                 {
                   playerPros.slice(1).map(value => {
-                    return <p style={{textAlign: "center"}} key={value.name}>
-                      <img src={require("../../assets/" + value.logo)} onClick={()=>this.queryClassTop(value.class)}/>
-                    </p>
+                    return (
+                      <div
+                        className={`profession-button ${String(value.class) === String(queryClass) ? 'active' : ''}`}
+                        key={value.name}
+                        title={value.name}
+                        onClick={() => this.queryClassTop(value.class)}
+                      >
+                        <img src={require("../../assets/" + value.logo)} alt={value.name}/>
+                      </div>
+                    )
                   })
                 }
-              </Card>
-            </Col>
-            <Col span={7}>
-              <Card title="伤害排行">
-                <Table
-                  bordered
-                  size="small"
-                  columns={this.columnsClassTop}
-                  dataSource={classTop}
-                  rowKey={(record) => {
-                    return record.skill
-                  }}
-                  loading={loadingTop}
-                  pagination={{
-                    defaultPageSize: 50,
-                    total: classTop.length,
-                    pageSizeOptions: ['50', '100', '200', '500'],
-                    showTotal: (total) => `共${total}条记录`,
-                  }}
-                />
-              </Card>
-            </Col>
-            <Col span={15}>
-              <Card title="原始日志">
-                <Table
-                  bordered
-                  size="small"
-                  columns={this.columns}
-                  dataSource={logData.list}
-                  rowKey={(record) => {
-                    return record.id
-                  }}
-                  pagination={pagination}
-                  loading={loading}
-                  rowClassName={rowClassName}
-                />
-              </Card>
-            </Col>
-          </Row>
-        </Card>
+              </div>
+              <Table
+                bordered
+                size="small"
+                columns={this.columnsClassTop}
+                dataSource={classTop}
+                rowKey={(record) => {
+                  return record.skill
+                }}
+                loading={loadingTop}
+                pagination={{
+                  defaultPageSize: 50,
+                  total: classTop.length,
+                  pageSizeOptions: ['50', '100', '200', '500'],
+                  showTotal: (total) => `共${total}条记录`,
+                }}
+                scroll={{x: 320}}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} lg={18}>
+            <Card title="战斗日志明细" className="battle-section-card">
+              <Table
+                bordered
+                size="small"
+                columns={this.columns}
+                dataSource={logList}
+                rowKey={(record) => {
+                  return record.id
+                }}
+                pagination={pagination}
+                loading={loading}
+                rowClassName={rowClassName}
+                scroll={{x: 760}}
+              />
+            </Card>
+          </Col>
+        </Row>
       </PageContainer>
     );
   }

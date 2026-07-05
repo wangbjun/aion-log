@@ -1,9 +1,8 @@
-import {Button, Card, Col, DatePicker, Empty, Form, Input, Row, Select, Statistic, Table, Tag} from 'antd';
+import {Button, Card, Col, DatePicker, Form, Input, Row, Select, Statistic} from 'antd';
 import React from 'react';
 import {PageContainer} from '@ant-design/pro-layout';
 import {connect} from "@/.umi/plugin-dva/exports";
 import moment from "moment";
-import {Link} from 'umi';
 import {playerPros} from "@/utils/utils";
 import * as echarts from 'echarts';
 import "../../global.less"
@@ -20,111 +19,31 @@ const {Option} = Select
 class Player extends React.Component {
   formRef = React.createRef();
 
-  constructor(props) {
-    super(props);
-    this.columns = [
-      {
-        title: "玩家",
-        dataIndex: 'name',
-        key: 'name',
-        sorter: function (a, b) {
-          return a.name.localeCompare(b.name)
-        },
-        render: this.renderName,
-        width: "25%",
-      },
-      {
-        title: "种族",
-        dataIndex: 'type',
-        key: 'type',
-        width: "10%",
-        sorter: function (a, b) {
-          return a.type - b.type
-        },
-        render: function (value) {
-          if (value === 0) {
-            return <Tag color="orange">其它</Tag>
-          }
-          if (value === 1) {
-            return <Tag color="green">天族</Tag>
-          }
-          if (value === 2) {
-            return <Tag color="blue">魔族</Tag>
-          }
-        }
-      },
-      {
-        title: "职业",
-        dataIndex: 'class',
-        key: 'class',
-        width: "8%",
-        sorter: function (a, b) {
-          return a.class - b.class
-        },
-        render: function (value) {
-          return <img src={require("../../assets/" + playerPros[value].logo)} width={30}/>
-        }
-      },
-      {
-        title: "技能次数",
-        dataIndex: 'skill_count',
-        key: 'skill_count',
-        width: "8%",
-        sorter: function (a, b) {
-          return a.skill_count - b.skill_count
-        },
-      },
-      {
-        title: "暴击率",
-        dataIndex: 'critical_ratio',
-        key: 'critical_ratio',
-        width: "8%",
-        sorter: function (a, b) {
-          return a.critical_ratio - b.critical_ratio
-        },
-        render: function (value) {
-          return (value*100).toFixed(1)+"%"
-        }
-      },
-      {
-        title: "击杀数",
-        dataIndex: 'kill_count',
-        key: 'kill_count',
-        width: "8%",
-        sorter: function (a, b) {
-          return a.kill_count - b.kill_count
-        },
-      },
-      {
-        title: "死亡数",
-        dataIndex: 'death_count',
-        key: 'death_count',
-        width: "8%",
-        sorter: function (a, b) {
-          return a.death_count - b.death_count
-        },
-      },
-      {
-        title: "最后更新时间",
-        dataIndex: 'time',
-        key: 'time',
-        width: "20%",
-        sorter: function (a, b) {
-          return moment(a.time).isAfter(moment(b.time))
-        },
-        render: function (value) {
-          return moment(value).format("YYYY-MM-DD HH:mm:ss")
-        }
-      },
-    ];
-  }
-
-  renderName = (value) => {
-    return <Link target="_blank" to={`/log?player=${value}`}>{value}</Link>
-  }
-
   componentDidMount() {
+    window.addEventListener('resize', this.resizeCharts)
     this.query().then()
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.resizeCharts)
+    clearTimeout(this.timelineZoomTimer)
+    if (this.classCompareChart) {
+      echarts.dispose(this.classCompareChart)
+      this.classCompareChart = null
+    }
+    if (this.timeline) {
+      echarts.dispose(this.timeline)
+      this.timeline = null
+    }
+  }
+
+  resizeCharts = () => {
+    if (this.classCompareChart) {
+      this.classCompareChart.resize()
+    }
+    if (this.timeline) {
+      this.timeline.resize()
+    }
   }
 
   query = async () => {
@@ -148,13 +67,28 @@ class Player extends React.Component {
       type: 'global/fetchPlayerList',
       payload: {
         st, et,
-        name: fieldValue.name,
+        name: fieldValue.name && fieldValue.name.trim(),
         type: fieldValue.type,
         class: fieldValue.class
       }
     });
-    this.initAngelPie();
-    this.initDemonPie();
+    this.initClassCompareChart();
+  }
+
+  queryPlayerStats = async (st, et) => {
+    const {dispatch} = this.props
+    const fieldValue = this.formRef.current.getFieldValue();
+
+    await dispatch({
+      type: 'global/fetchPlayerList',
+      payload: {
+        st, et,
+        name: fieldValue.name && fieldValue.name.trim(),
+        type: fieldValue.type,
+        class: fieldValue.class
+      }
+    });
+    this.initClassCompareChart();
   }
 
   onReset = async () => {
@@ -185,94 +119,128 @@ class Player extends React.Component {
     return result
   }
 
-  initAngelPie() {
-    try {
-      if (!this.angelPie) {
-        this.angelPie = echarts.init(document.getElementById("angelPie"))
+  getClassCompareData() {
+    const {playerList} = this.props
+    const classList = playerPros.slice(1)
+    const angelData = classList.map(() => 0)
+    const demonData = classList.map(() => 0)
+    playerList && playerList.forEach(value => {
+      const index = classList.findIndex(item => item.class === value.class)
+      if (index < 0) {
+        return
       }
-    }catch (e) {
-      console.log(e)
-      return
+      if (value.type === 1) {
+        angelData[index] += 1
+      } else if (value.type === 2) {
+        demonData[index] += 1
+      }
+    })
+    return {
+      classNames: classList.map(value => value.name),
+      angelData,
+      demonData,
     }
-    const option = {
-      title: {
-        text: "天族职业分布"
-      },
-      tooltip: {
-        trigger: 'item',
-        formatter: '{b0}'
-      },
-      legend: {
-        orient: 'vertical',
-        left: 'right',
-        align: 'left'
-      },
-      series: [
-        {
-          type: 'pie',
-          radius: '80%',
-          data: this.getClassData(1),
-          emphasis: {
-            itemStyle: {
-              shadowBlur: 10,
-              shadowOffsetX: 0,
-              shadowColor: 'rgba(0, 0, 0, 0.5)'
-            }
-          },
-          label: {
-            show: true,
-            position: 'inside',
-            formatter: '{d}%'
-          }
-        }
-      ]
-    }
-    this.angelPie.setOption(option)
   }
 
-  initDemonPie() {
+  initClassCompareChart() {
     try {
-      if (!this.demonPie) {
-        this.demonPie = echarts.init(document.getElementById("demonPie"))
+      if (this.classCompareChart) {
+        echarts.dispose(this.classCompareChart)
       }
-    }catch (e) {
+      const chartEl = document.getElementById("classCompareChart")
+      if (!chartEl) {
+        return
+      }
+      this.classCompareChart = echarts.init(chartEl)
+    } catch (e) {
       console.log(e)
       return
     }
+    const {classNames, angelData, demonData} = this.getClassCompareData()
+    const hasData = angelData.some(Boolean) || demonData.some(Boolean)
     const option = {
-      title: {
-        text: "魔族职业分布"
-      },
+      animationDuration: 360,
       tooltip: {
-        trigger: 'item',
-        formatter: '{b0}'
+        trigger: 'axis',
+        axisPointer: {
+          type: 'shadow'
+        },
+        formatter: function (params) {
+          const name = params[0] && params[0].axisValue
+          const angel = params.find(item => item.seriesName === "天族")
+          const demon = params.find(item => item.seriesName === "魔族")
+          return `${name}<br/>天族：${Math.abs(angel && angel.value || 0)}<br/>魔族：${Math.abs(demon && demon.value || 0)}`
+        }
       },
       legend: {
-        orient: 'vertical',
-        left: 'right',
-        align: 'left'
+        data: ['天族', '魔族']
       },
+      grid: {
+        containLabel: true,
+        left: 8,
+        right: 30,
+        top: 36,
+        bottom: 12
+      },
+      xAxis: {
+        type: 'value',
+        axisLabel: {
+          formatter: function (value) {
+            return Math.abs(value)
+          }
+        }
+      },
+      yAxis: {
+        type: 'category',
+        inverse: true,
+        data: classNames,
+        axisTick: {
+          show: false
+        }
+      },
+      graphic: hasData ? [] : [{
+        type: 'text',
+        left: 'center',
+        top: 'middle',
+        style: {
+          text: '暂无数据',
+          fill: '#999',
+          fontSize: 14
+        }
+      }],
       series: [
         {
-          type: 'pie',
-          radius: '80%',
-          data: this.getClassData(2),
-          emphasis: {
-            itemStyle: {
-              shadowBlur: 10,
-              shadowOffsetX: 0,
-              shadowColor: 'rgba(0, 0, 0, 0.5)'
-            }
+          name: '天族',
+          type: 'bar',
+          stack: 'total',
+          data: angelData.map(value => -value),
+          itemStyle: {
+            color: '#52c41a'
           },
           label: {
             show: true,
-            position: 'inside',
-            formatter: '{d}%'
+            position: 'left',
+            formatter: function (params) {
+              return Math.abs(params.value)
+            }
           }
-        }
+        },
+        {
+          name: '魔族',
+          type: 'bar',
+          stack: 'total',
+          data: demonData,
+          itemStyle: {
+            color: '#1890ff'
+          },
+          label: {
+            show: true,
+            position: 'right'
+          }
+        },
       ]
     }
-    this.demonPie.setOption(option)
+    this.classCompareChart.setOption(option)
   }
 
   initTimeline() {
@@ -280,18 +248,28 @@ class Player extends React.Component {
       if (this.timeline) {
         echarts.dispose(this.timeline)
       }
-      this.timeline = echarts.init(document.getElementById("timeline"))
+      const chartEl = document.getElementById("timeline")
+      if (!chartEl) {
+        return
+      }
+      this.timeline = echarts.init(chartEl)
     }catch (e) {
       console.log(e)
       return
     }
     const {timeline} = this.props
+    const timeData = timeline.timeData || []
+    const killValue = timeline.killValue || []
+    const killedValue = timeline.killedValue || []
+    const hasData = timeData.length > 0
     const option = {
+      animationDuration: 360,
       grid: {
-        left: 30,
+        containLabel: true,
+        left: 40,
         right: 20,
-        top: '10%',
-        bottom: 5
+        top: 42,
+        bottom: 48
       },
       toolbox: {
         feature: {
@@ -308,40 +286,111 @@ class Player extends React.Component {
         axisPointer: {
           type: 'shadow'
         },
+        formatter: function (params) {
+          const time = params[0] && params[0].axisValue
+          const angel = params.find(item => item.seriesName === "天族击杀数")
+          const demon = params.find(item => item.seriesName === "魔族击杀数")
+          const angelValue = angel && angel.value || 0
+          const demonValue = demon && demon.value || 0
+          return `${time}<br/>天族击杀：${angelValue}<br/>魔族击杀：${demonValue}<br/>战斗热度：${angelValue + demonValue}`
+        }
       },
       xAxis: {
-        show: false,
+        show: true,
         type: 'category',
         boundaryGap: true,
-        data: timeline.timeData,
+        data: timeData,
+        axisLabel: {
+          formatter: function (value) {
+            return moment(value).format("HH:mm")
+          }
+        },
       },
       yAxis: {
-        type: 'value'
+        type: 'value',
+        name: '击杀数',
       },
+      dataZoom: [
+        {
+          type: 'slider',
+          xAxisIndex: 0,
+          height: 18,
+          bottom: 12,
+        }
+      ],
+      graphic: hasData ? [] : [{
+        type: 'text',
+        left: 'center',
+        top: 'middle',
+        style: {
+          text: '暂无战斗趋势',
+          fill: '#999',
+          fontSize: 14
+        }
+      }],
       series: [
         {
           name: "天族击杀数",
-          type: 'line',
-          data: timeline.killValue,
+          type: 'bar',
+          barMaxWidth: 12,
+          data: killValue,
+          itemStyle: {
+            color: '#52c41a'
+          },
         },
         {
           name: '魔族击杀数',
-          type: 'line',
-          data: timeline.killedValue,
+          type: 'bar',
+          barMaxWidth: 12,
+          data: killedValue,
+          itemStyle: {
+            color: '#1890ff'
+          },
         },
       ],
     }
-    this.timeline.on('datazoom', async (params) => {
-      let start = params.batch && params.batch[0].startValue
-      let end = params.batch && params.batch[0].endValue
-      let startTime = timeline.timeData && timeline.timeData[start]
-      let endTime = timeline.timeData && timeline.timeData[end]
-      if (startTime && endTime) {
-        this.formRef.current.setFieldsValue({time: [moment(startTime), moment(endTime)]})
-        this.query().then()
-      }
+    this.timeline.on('datazoom', (params) => {
+      clearTimeout(this.timelineZoomTimer)
+      this.timelineZoomTimer = setTimeout(() => this.handleTimelineZoom(params), 220)
+    })
+    this.timeline.on('restore', async () => {
+      await this.formRef.current.resetFields(['time'])
+      this.queryPlayerStats().then()
     })
     this.timeline.setOption(option)
+  }
+
+  handleTimelineZoom = async (params) => {
+    const {timeline} = this.props
+    const zoom = params.batch && params.batch[0] || params
+    const timeData = timeline.timeData || []
+    if (!timeData.length) {
+      return
+    }
+
+    let start = zoom && zoom.startValue
+    let end = zoom && zoom.endValue
+    if (start === undefined || end === undefined) {
+      start = Math.floor((zoom.start || 0) * (timeData.length - 1) / 100)
+      end = Math.ceil((zoom.end || 100) * (timeData.length - 1) / 100)
+    }
+
+    const startIndex = typeof start === 'number' ? start : timeData.indexOf(start)
+    const endIndex = typeof end === 'number' ? end : timeData.indexOf(end)
+    const isReset = (zoom.start === 0 && zoom.end === 100) ||
+      (startIndex === 0 && endIndex >= timeData.length - 1)
+    if (isReset) {
+      await this.formRef.current.resetFields(['time'])
+      this.queryPlayerStats().then()
+      return
+    }
+
+    const startTime = typeof start === 'number' ? timeData[start] : start
+    const endTime = typeof end === 'number' ? timeData[end] : end
+    if (startTime && endTime) {
+      await this.formRef.current.setFieldsValue({time: [moment(startTime), moment(endTime)]})
+      this.queryPlayerStats(startTime, endTime).then()
+    }
   }
 
   getStatData(data) {
@@ -376,7 +425,7 @@ class Player extends React.Component {
         autoComplete="false"
         ref={this.formRef}
       >
-        <Form.Item label="时间" name="time">
+        <Form.Item label="时间" name="time" className="battle-form-range">
           <RangePicker
             format={dateFormat}
             ranges={{
@@ -389,52 +438,15 @@ class Player extends React.Component {
             allowClear
             showTime={{defaultValue: moment('00:00:00', 'HH:mm:ss')}}
             onChange={(d, ds) => this.query(d, ds)}
-            style={{width: 350}}
+            style={{width: '100%'}}
           />
-        </Form.Item>
-        <Form.Item label="玩家" name="name">
-          <Input allowClear placeholder="请输入" style={{width: 150}}/>
-        </Form.Item>
-        <Form.Item label="种族" name="type">
-          <Select
-            allowClear
-            showSearch
-            style={{width: 100}}
-            placeholder="请选择种族"
-            optionFilterProp="children"
-            filterOption={(input, option) =>
-              option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-            }
-            onSelect={() => this.query()}
-          >
-            <Option value="1">天族</Option>
-            <Option value="2">魔族</Option>
-            <Option value="0">其它</Option>
-          </Select>
-        </Form.Item>
-        <Form.Item label="职业" name="class">
-          <Select
-            allowClear
-            showSearch
-            style={{width: 100}}
-            placeholder="请选择职业"
-            optionFilterProp="children"
-            filterOption={(input, option) =>
-              option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-            }
-            onSelect={() => this.query()}
-          >
-            {playerPros.map((v, k) =>
-              <Option value={k} key={k}>{v.name}</Option>
-            )}
-          </Select>
         </Form.Item>
         <Form.Item>
           <Button type="primary" htmlType="submit">
             搜索
           </Button>
           &nbsp;&nbsp;
-          <Button type="primary" onClick={this.onReset}>
+          <Button onClick={this.onReset}>
             重置
           </Button>
         </Form.Item>
@@ -442,57 +454,44 @@ class Player extends React.Component {
   }
 
   render() {
-    const {playerList, loading} = this.props
+    const {playerList} = this.props
+    const players = playerList || []
     const statData = this.getStatData(playerList)
+    const knownPlayers = statData.angel + statData.demon
+    const angelRate = knownPlayers ? `${((statData.angel / knownPlayers) * 100).toFixed(1)}%` : '0%'
+    const demonRate = knownPlayers ? `${((statData.demon / knownPlayers) * 100).toFixed(1)}%` : '0%'
     return (
-      <PageContainer>
-        <Card extra={this.searchForm()} >
-          <Row>
-            <Col span={7}>
-              <Card title="种族">
-                <Row gutter={16}>
-                  <Col span={6}>
-                    <Statistic title="天魔总数" value={statData.angel + statData.demon} valueStyle={{color: "red"}}/>
-                  </Col>
-                  <Col span={6}>
-                    <Statistic title="天族" value={statData.angel} valueStyle={{color: "green"}}/>
-                  </Col>
-                  <Col span={6}>
-                    <Statistic title="魔族" value={statData.demon} valueStyle={{color: "blue"}}/>
-                  </Col>
-                  <Col span={6}>
-                    <Statistic title="其它" value={statData.other} valueStyle={{color: "grey"}}/>
-                  </Col>
-                </Row>
-              </Card>
-              <Card>
-                <div id="angelPie" style={{height: '250px'}}/>
-              </Card>
-              <Card>
-                <div id="demonPie" style={{height: '250px'}}/>
-              </Card>
-            </Col>
-            <Col span={17}>
-              <Card>
-                <div id="timeline" style={{height: '250px'}}/>
-              </Card>
-              <Table
-                bordered
-                size="small"
-                columns={this.columns}
-                dataSource={playerList}
-                rowKey={(record) => {
-                  return record.id
-                }}
-                pagination={{
-                  defaultPageSize: 15,
-                  pageSizeOptions: ['50', '100', '200', '500'],
-                  showTotal: (total) => `共${total}条记录`,
-                }}
-                loading={loading}
-              />
-            </Col>
-          </Row>
+      <PageContainer title={false}>
+        <Card className="battle-toolbar">
+          {this.searchForm()}
+        </Card>
+        <Row gutter={[12, 12]}>
+          <Col xs={24} xl={12}>
+            <Card title="玩家统计" className="battle-section-card battle-overview-stats">
+              <Row gutter={[12, 18]}>
+                <Col xs={24} md={8} xl={24}>
+                  <Statistic title="玩家总数" value={players.length}/>
+                </Col>
+                <Col xs={12} md={8} xl={12}>
+                  <Statistic title={`天族 ${angelRate}`} value={statData.angel} valueStyle={{color: "#52c41a"}}/>
+                </Col>
+                <Col xs={12} md={8} xl={12}>
+                  <Statistic title={`魔族 ${demonRate}`} value={statData.demon} valueStyle={{color: "#1890ff"}}/>
+                </Col>
+                <Col xs={24} md={8} xl={24}>
+                  <Statistic title="未识别/其它" value={statData.other} valueStyle={{color: "#fa8c16"}}/>
+                </Col>
+              </Row>
+            </Card>
+          </Col>
+          <Col xs={24} xl={12}>
+            <Card title="天魔职业对比" className="battle-section-card">
+              <div id="classCompareChart" className="battle-chart-compare"/>
+            </Card>
+          </Col>
+        </Row>
+        <Card title="战斗趋势" className="battle-section-card battle-primary-card">
+          <div id="timeline" className="battle-chart-main"/>
         </Card>
       </PageContainer>
     );

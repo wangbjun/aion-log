@@ -6,7 +6,7 @@
 import ProLayout, {DefaultFooter} from '@ant-design/pro-layout';
 import React, {useMemo, useRef} from 'react';
 import {connect, history, Link} from 'umi';
-import {Button, Modal, Result} from 'antd';
+import {Alert, Button, Result} from 'antd';
 import Authorized from '@/utils/Authorized';
 import RightContent from '@/components/GlobalHeader/RightContent';
 import {getMatchMenu} from '@umijs/route-utils';
@@ -51,6 +51,7 @@ const BasicLayout = (props) => {
       pathname: '/',
     }
   } = props;
+  const noticeVisible = localStorage.getItem("modalClose") !== "true";
   const menuDataRef = useRef([]);
   // useEffect(() => {
   //   if (dispatch) {

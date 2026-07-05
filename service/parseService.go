@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"regexp"
@@ -71,6 +72,10 @@ func (r *Parser) Run(fileName string) error {
 	}
 	defer file.Close()
 
+	return r.RunReader(file, fileName)
+}
+
+func (r *Parser) RunReader(reader io.Reader, sourceName string) error {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 	errCh := make(chan error, 2)
@@ -78,10 +83,10 @@ func (r *Parser) Run(fileName string) error {
 	go r.processLog(&wg, errCh)
 
 	st := time.Now()
-	log.Printf("begin process: %s", fileName)
+	log.Printf("begin process: %s", sourceName)
 
 	decoder := simplifiedchinese.GBK.NewDecoder()
-	scanner := bufio.NewScanner(file)
+	scanner := bufio.NewScanner(reader)
 	scanner.Buffer(make([]byte, 64*1024), 4*1024*1024)
 	for scanner.Scan() {
 		b, err := decoder.Bytes(scanner.Bytes())
@@ -115,7 +120,7 @@ func (r *Parser) Run(fileName string) error {
 	wg.Wait()
 	close(errCh)
 
-	log.Printf("finish process: %s, cost: %.2fs\n", fileName, time.Since(st).Seconds())
+	log.Printf("finish process: %s, cost: %.2fs\n", sourceName, time.Since(st).Seconds())
 	for err := range errCh {
 		if err != nil {
 			return err

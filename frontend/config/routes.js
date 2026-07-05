@@ -23,24 +23,30 @@ export default [
             routes: [
               {
                 path: '/',
-                name: '卡多尔',
+                name: '总览',
                 icon: 'smile',
                 component: './Player',
               },
               {
-                name: '普埃塔',
+                name: '玩家明细',
+                icon: 'TeamOutlined',
+                path: '/players',
+                component: './PlayerDetail',
+              },
+              {
+                name: '战斗日志',
                 icon: 'table',
                 path: '/log',
                 component: './Log',
               },
               {
-                name: '封神榜',
+                name: '异常分析',
                 icon: 'LockOutlined',
                 path: '/rank',
                 component: './Rank',
               },
               {
-                name: '导入日志',
+                name: '数据导入',
                 icon: 'UploadOutlined',
                 path: '/import',
                 component: './ImportLog',

@@ -104,3 +104,354 @@ ol {
   list-style: none;
   font-feature-settings: 'tnum', "tnum";
 }
+
+.ant-pro-top-nav-header-main {
+  position: relative;
+  width: 100%;
+}
+
+.ant-pro-top-nav-header-menu {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: flex;
+  height: 100%;
+  transform: translateX(-50%);
+  justify-content: center;
+}
+
+.ant-pro-top-nav-header-menu .ant-menu-horizontal {
+  display: flex;
+  justify-content: center;
+}
+
+.battle-layout-notice {
+  margin: 16px 24px 0;
+  padding: 0 24px;
+}
+
+.battle-toolbar {
+  margin-bottom: 12px;
+
+  .ant-card-body {
+    padding: 14px 16px !important;
+  }
+
+  .ant-form-inline {
+    row-gap: 8px;
+  }
+
+  .battle-form-range {
+    width: 450px;
+    max-width: 100%;
+  }
+}
+
+.battle-stat-card {
+  height: 100%;
+
+  .ant-card-body {
+    padding: 14px 16px !important;
+  }
+}
+
+.battle-section-card {
+  margin-bottom: 12px;
+}
+
+.battle-section-card .ant-card-head {
+  min-height: 42px;
+}
+
+.battle-section-card .ant-card-head-title {
+  padding: 10px 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.battle-chart {
+  height: 260px;
+}
+
+.battle-chart-tall {
+  height: 300px;
+}
+
+.battle-chart-main {
+  height: 300px;
+}
+
+.battle-chart-compare {
+  height: 300px;
+}
+
+.battle-overview-stats {
+  height: 100%;
+
+  .ant-card-body {
+    display: flex;
+    align-items: center;
+    min-height: 316px;
+  }
+
+  .ant-row {
+    width: 100%;
+  }
+}
+
+.battle-primary-card {
+  margin-bottom: 12px;
+}
+
+.profession-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 10px;
+}
+
+.profession-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  border: 1px solid #f0f0f0;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.profession-button:hover,
+.profession-button.active {
+  border-color: #1890ff;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.16);
+  transform: translateY(-1px);
+}
+
+.profession-button img {
+  max-width: 36px;
+  max-height: 36px;
+}
+
+.battle-import-page {
+  align-items: stretch;
+}
+
+.battle-import-main {
+  height: 100%;
+}
+
+.battle-import-main .ant-card-body {
+  padding: 18px !important;
+}
+
+.battle-import-main-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.battle-import-title {
+  color: rgba(0, 0, 0, 0.85);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.battle-upload-panel .ant-upload.ant-upload-drag {
+  padding: 30px 24px;
+  border-color: #91d5ff;
+  background: #f7fbff;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.battle-upload-panel .ant-upload.ant-upload-drag:not(.ant-upload-disabled):hover {
+  border-color: #1890ff;
+  background: #f0f8ff;
+  box-shadow: 0 8px 20px rgba(24, 144, 255, 0.10);
+}
+
+.battle-upload-panel .ant-upload.ant-upload-disabled {
+  border-color: #d9d9d9;
+  background: #fafafa;
+}
+
+.battle-upload-panel .ant-upload-drag-icon {
+  margin-bottom: 12px !important;
+}
+
+.battle-upload-panel .ant-upload-drag-icon .anticon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: #e6f7ff;
+  color: #1890ff;
+  font-size: 28px;
+}
+
+.battle-upload-panel .ant-upload-text {
+  margin-bottom: 4px !important;
+  color: rgba(0, 0, 0, 0.85) !important;
+  font-size: 18px !important;
+  font-weight: 600;
+}
+
+.battle-upload-panel .ant-upload-hint {
+  color: rgba(0, 0, 0, 0.45) !important;
+}
+
+.battle-import-summary {
+  margin-top: 14px;
+}
+
+.battle-import-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid #f0f0f0;
+  background: #fff;
+  color: rgba(0, 0, 0, 0.75);
+  font-weight: 500;
+}
+
+.battle-import-summary-item .anticon {
+  color: #1890ff;
+  font-size: 16px;
+}
+
+.battle-import-note {
+  margin-top: 14px;
+}
+
+.battle-import-status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.battle-import-status-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(0, 0, 0, 0.85);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.battle-import-status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.battle-import-status .ant-progress {
+  margin-bottom: 12px;
+}
+
+.battle-import-status-importing .battle-import-status-icon {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+
+.battle-import-status-success .battle-import-status-icon {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.battle-import-status-error .battle-import-status-icon {
+  background: #fff1f0;
+  color: #ff4d4f;
+}
+
+.battle-import-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+.battle-import-file span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.battle-import-status .ant-alert {
+  margin-top: 12px;
+}
+
+.battle-import-flow .ant-steps-item-description {
+  max-width: none !important;
+}
+
+.battle-muted {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+@media (max-width: @screen-md) {
+  .ant-pro-top-nav-header-menu {
+    position: static;
+    height: auto;
+    transform: none;
+    justify-content: flex-start;
+  }
+
+  .battle-layout-notice {
+    margin: 16px 0 0;
+    padding: 0 16px;
+  }
+
+  .battle-toolbar .ant-form-item,
+  .battle-toolbar .ant-picker,
+  .battle-toolbar .ant-input,
+  .battle-toolbar .ant-select {
+    width: 100% !important;
+  }
+
+  .battle-toolbar .ant-form-inline .ant-form-item {
+    margin-right: 0;
+  }
+
+  .battle-chart,
+  .battle-chart-tall,
+  .battle-chart-main,
+  .battle-chart-compare {
+    height: 240px;
+  }
+
+  .battle-overview-stats {
+    height: auto;
+
+    .ant-card-body {
+      min-height: auto;
+    }
+  }
+
+  .battle-import-main .ant-card-body {
+    padding: 14px !important;
+  }
+
+  .battle-import-main-header,
+  .battle-import-status-header {
+    gap: 8px;
+  }
+
+  .battle-upload-panel .ant-upload.ant-upload-drag {
+    padding: 24px 14px;
+  }
+}
