@@ -1,27 +1,30 @@
 package service
 
-import "aion/model"
+import (
+	"aion/model"
+	"sync"
+)
 
 type CacheService struct {
-	cachePlayers map[string][]*model.Player
-	cacheRank    map[string][]model.RankResult
-	cachePlayer  map[string]*model.Player
-	cacheClass   map[string][]*model.SkillDamage
-	cacheSkill   map[string]model.PlayerSkill
+	mu          sync.RWMutex
+	cachePlayer map[string]*model.Player
+	cacheClass  map[string][]*model.SkillDamage
+	cacheSkill  map[string]model.PlayerSkill
 }
 
-var defaultCacheService *CacheService
+var (
+	defaultCacheService *CacheService
+	defaultCacheOnce    sync.Once
+)
 
 func NewCacheService() *CacheService {
-	if defaultCacheService == nil {
+	defaultCacheOnce.Do(func() {
 		defaultCacheService = &CacheService{
-			cachePlayers: make(map[string][]*model.Player),
-			cacheRank:    make(map[string][]model.RankResult),
-			cachePlayer:  make(map[string]*model.Player),
-			cacheClass:   make(map[string][]*model.SkillDamage),
-			cacheSkill:   make(map[string]model.PlayerSkill),
+			cachePlayer: make(map[string]*model.Player),
+			cacheClass:  make(map[string][]*model.SkillDamage),
+			cacheSkill:  make(map[string]model.PlayerSkill),
 		}
-	}
+	})
 
 	return defaultCacheService
 }
@@ -31,53 +34,60 @@ func (s *CacheService) Load() error {
 	if err != nil {
 		return err
 	}
+	cachePlayer := make(map[string]*model.Player, len(players))
 	for _, player := range players {
-		s.cachePlayer[player.Name] = player
+		cachePlayer[player.Name] = player
 	}
 
 	skills, err := model.PlayerSkill{}.GetAll()
 	if err != nil {
 		return err
 	}
+	cacheSkill := make(map[string]model.PlayerSkill, len(skills))
 	for _, skill := range skills {
-		s.cacheSkill[skill.Skill] = skill
+		cacheSkill[skill.Skill] = skill
 	}
+
+	s.mu.Lock()
+	s.cachePlayer = cachePlayer
+	s.cacheClass = make(map[string][]*model.SkillDamage)
+	s.cacheSkill = cacheSkill
+	s.mu.Unlock()
 
 	return nil
 }
 
+func (s *CacheService) Reset() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.cachePlayer = make(map[string]*model.Player)
+	s.cacheClass = make(map[string][]*model.SkillDamage)
+	s.cacheSkill = make(map[string]model.PlayerSkill)
+}
+
 func (s *CacheService) GetPlayer(name string) (*model.Player, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	player, ok := s.cachePlayer[name]
 	return player, ok
 }
 
 func (s *CacheService) GetSkill(skill string) (model.PlayerSkill, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	player, ok := s.cacheSkill[skill]
 	return player, ok
 }
 
-func (s *CacheService) GetPlayers(key string) ([]*model.Player, bool) {
-	players, ok := s.cachePlayers[key]
-	return players, ok
-}
-
-func (s *CacheService) SetPlayers(name string, data []*model.Player) {
-	s.cachePlayers[name] = data
-}
-
-func (s *CacheService) GetRank(key string) ([]model.RankResult, bool) {
-	cached, ok := s.cacheRank[key]
-	return cached, ok
-}
-func (s *CacheService) SetRank(key string, data []model.RankResult) {
-	s.cacheRank[key] = data
-}
-
 func (s *CacheService) GetClassTop(key string) ([]*model.SkillDamage, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	cached, ok := s.cacheClass[key]
 	return cached, ok
 }
 
 func (s *CacheService) SetClassTop(key string, data []*model.SkillDamage) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.cacheClass[key] = data
 }

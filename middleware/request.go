@@ -2,9 +2,10 @@ package middleware
 
 import (
 	"aion/util"
-	"aion/zlog"
-	"github.com/gin-gonic/gin"
+	"log"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // Request /**
@@ -14,6 +15,6 @@ func Request() gin.HandlerFunc {
 		ctx.Set("startTime", time.Now())
 		ctx.Set("parentId", ctx.GetHeader("X-Ca-TraceId"))
 		ctx.Next()
-		zlog.WithContext(ctx).Info("After_Request")
+		log.Printf("%s %s %s", ctx.ClientIP(), ctx.Request.Method, ctx.Request.URL.Path)
 	}
 }

@@ -4,10 +4,13 @@ import (
 	"aion/model"
 	"aion/service"
 	"fmt"
-	"github.com/gin-gonic/gin"
+	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type battleController struct {
@@ -79,10 +82,6 @@ func (r battleController) GetRank(ctx *gin.Context) {
 	var (
 		level, _ = ctx.GetQuery("level")
 	)
-	if cached, ok := r.cache.GetRank(level); ok {
-		r.Success(ctx, "ok", cached)
-		return
-	}
 	data, err := model.Rank{}.GetAll(level)
 	if err != nil {
 		r.Failed(ctx, Failed, err.Error())
@@ -105,9 +104,13 @@ func (r battleController) GetPlayers(ctx *gin.Context) {
 		et, _ = ctx.GetQuery("et")
 	)
 
-	var key = "player_" + st + "_" + et
-	if cached, ok := r.cache.GetPlayers(key); ok {
-		r.Success(ctx, "ok", cached)
+	if st == "" || et == "" {
+		players, err := model.Player{}.GetAll()
+		if err != nil {
+			r.Failed(ctx, Failed, err.Error())
+			return
+		}
+		r.Success(ctx, "ok", players)
 		return
 	}
 
@@ -126,67 +129,10 @@ func (r battleController) GetPlayers(ctx *gin.Context) {
 			v.Time = existed.Time
 		}
 	}
-	var result []struct {
-		Player string
-		Target string
-		Count  int
-	}
-	skillCountSql := fmt.Sprintf("select player,count(1) as count from aion_chat_log " +
-		"where target != '' and skill not in ('attack','kill','killed')")
-	if st != "" && et != "" {
-		skillCountSql += fmt.Sprintf(" and time >= '%s' and time <= '%s'", st, et)
-	}
-	skillCountSql += " group by player"
-	err = model.DB().Raw(skillCountSql).Find(&result).Error
-	if err != nil {
+
+	if err := (model.Player{}).FillStats(players, st, et); err != nil {
 		r.Failed(ctx, Failed, err.Error())
 		return
-	}
-	var playerSkillCount = make(map[string]int, 2000)
-	for _, v := range result {
-		playerSkillCount[v.Player] = v.Count
-	}
-
-	playerCountSql := "select player,target,count(1) count from aion_chat_log where skill = 'kill'"
-	if st != "" && et != "" {
-		playerCountSql += fmt.Sprintf(" and time >= '%s' and time <= '%s'", st, et)
-	}
-	playerCountSql += " group by player,target"
-	err = model.DB().Raw(playerCountSql).Find(&result).Error
-	if err != nil {
-		r.Failed(ctx, Failed, err.Error())
-		return
-	}
-	var playerKillCount = make(map[string]int)
-	var playerDeathCount = make(map[string]int)
-	for _, v := range result {
-		playerKillCount[v.Player] += v.Count
-		playerDeathCount[v.Target] += v.Count
-	}
-
-	playerCountSql = "select player,target,count(1) count from aion_chat_log where skill = 'killed'"
-	if st != "" && et != "" {
-		playerCountSql += fmt.Sprintf(" and time >= '%s' and time <= '%s'", st, et)
-	}
-	playerCountSql += " group by player,target"
-	err = model.DB().Raw(playerCountSql).Find(&result).Error
-	if err != nil {
-		r.Failed(ctx, Failed, err.Error())
-		return
-	}
-	for _, v := range result {
-		playerKillCount[v.Target] += v.Count
-		playerDeathCount[v.Player] += v.Count
-	}
-
-	for _, player := range players {
-		player.SkillCount = playerSkillCount[player.Name]
-		player.KillCount = playerKillCount[player.Name]
-		player.DeathCount = playerDeathCount[player.Name]
-	}
-
-	if len(players) > 0 {
-		r.cache.SetPlayers(key, players)
 	}
 	r.Success(ctx, "ok", players)
 }
@@ -253,7 +199,35 @@ func (r battleController) GetClassTop(ctx *gin.Context) {
 	r.Success(ctx, "ok", result)
 }
 
-// 合并两个时间序列
+func (r battleController) ImportLog(ctx *gin.Context) {
+	file, err := ctx.FormFile("file")
+	if err != nil {
+		r.Failed(ctx, ParamError, "missing log file")
+		return
+	}
+
+	uploadDir := filepath.Join("storage", "uploads")
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		r.Failed(ctx, Failed, err.Error())
+		return
+	}
+
+	saveName := fmt.Sprintf("%d_%s", time.Now().UnixNano(), filepath.Base(file.Filename))
+	savePath := filepath.Join(uploadDir, saveName)
+	if err := ctx.SaveUploadedFile(file, savePath); err != nil {
+		r.Failed(ctx, Failed, err.Error())
+		return
+	}
+
+	err = service.ImportChatLog(savePath)
+	if err != nil {
+		r.Failed(ctx, Failed, "importChatLog failed: "+err.Error())
+		return
+	}
+
+	r.Success(ctx, "ok", nil)
+}
+
 func mergeTimes(data1, data2 []model.Timeline) []time.Time {
 	timeSet := make(map[time.Time]struct{})
 	for _, dp := range data1 {

@@ -35,3 +35,11 @@ export async function queryClassTop(params) {
   });
 }
 
+export async function importLogData(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request('/api/v1/logs/import', {
+    data: formData,
+    method: "POST"
+  });
+}

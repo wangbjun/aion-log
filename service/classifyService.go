@@ -7,11 +7,11 @@ import (
 )
 
 type ClassifyService struct {
-	CacheService
+	*CacheService
 }
 
 func NewClassifyService() *ClassifyService {
-	return &ClassifyService{CacheService: *NewCacheService()}
+	return &ClassifyService{CacheService: NewCacheService()}
 }
 
 var updateSql = []string{
@@ -63,6 +63,11 @@ func (r ClassifyService) Run() error {
 	}
 
 	err = r.updatePlayerCritical()
+	if err != nil {
+		return err
+	}
+
+	err = r.updatePlayerStats()
 	if err != nil {
 		return err
 	}
@@ -177,6 +182,40 @@ func (r ClassifyService) updatePlayerCritical() error {
 		}
 	}
 	return nil
+}
+
+func (r ClassifyService) updatePlayerStats() error {
+	sql := `UPDATE aion_player_info
+SET skill_count = COALESCE((
+        SELECT count(1)
+        FROM aion_chat_log
+        WHERE player = aion_player_info.name
+            AND target != ''
+            AND skill NOT IN ('attack', 'kill', 'killed')
+    ), 0),
+    kill_count = COALESCE((
+        SELECT count(1)
+        FROM aion_chat_log
+        WHERE skill = 'kill'
+            AND player = aion_player_info.name
+    ), 0) + COALESCE((
+        SELECT count(1)
+        FROM aion_chat_log
+        WHERE skill = 'killed'
+            AND target = aion_player_info.name
+    ), 0),
+    death_count = COALESCE((
+        SELECT count(1)
+        FROM aion_chat_log
+        WHERE skill = 'kill'
+            AND target = aion_player_info.name
+    ), 0) + COALESCE((
+        SELECT count(1)
+        FROM aion_chat_log
+        WHERE skill = 'killed'
+            AND player = aion_player_info.name
+    ), 0)`
+	return model.DB().Exec(sql).Error
 }
 
 func (r ClassifyService) updateSkillCritical() error {

@@ -1,10 +1,9 @@
 package controller
 
 import (
-	"aion/zlog"
-	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 const (
@@ -41,8 +40,4 @@ func (*Controller) Failed(ctx *gin.Context, code int, msg string) {
 		"code": code,
 		"msg":  msg,
 	})
-}
-
-func (*Controller) LogSugar(ctx *gin.Context) *zap.SugaredLogger {
-	return zlog.WithContext(ctx).Sugar()
 }

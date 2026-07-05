@@ -2,3 +2,7 @@
 
 storage/logs
 .idea/*
+desktop/bin/
+desktop/node_modules/
+desktop/release/
+frontend/dist/

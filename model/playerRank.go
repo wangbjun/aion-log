@@ -1,8 +1,7 @@
 package model
 
 import (
-	"fmt"
-	"strings"
+	"strconv"
 	"time"
 )
 
@@ -18,12 +17,10 @@ func (r Rank) TableName() string {
 }
 
 func (r Rank) BatchInsert(items []Rank) error {
-	sql := "INSERT INTO `aion_player_rank` (`player`,`count`,`time`) VALUES "
-	for _, v := range items {
-		sql += fmt.Sprintf("('%s',%d,'%s'),", v.Player, v.Count, v.Time.Format(time.DateTime))
+	if len(items) == 0 {
+		return nil
 	}
-	sql = strings.TrimRight(sql, ",")
-	return DB().Exec(sql).Error
+	return DB().CreateInBatches(items, BatchInsertSize).Error
 }
 
 type RankResult struct {
@@ -36,8 +33,12 @@ type RankResult struct {
 
 func (r Rank) GetAll(level string) ([]RankResult, error) {
 	var results []RankResult
-	sql := fmt.Sprintf("SELECT player, GROUP_CONCAT(time ORDER BY time DESC) AS times, COUNT(time) AS counts FROM"+
-		" (SELECT player, time FROM aion_player_rank WHERE count = %s ORDER BY player, time DESC ) GROUP BY player HAVING counts >= 5", level)
-	err := DB().Raw(sql).Find(&results).Error
+	levelInt, err := strconv.Atoi(level)
+	if err != nil {
+		levelInt = 3
+	}
+	sql := "SELECT player, GROUP_CONCAT(time ORDER BY time DESC) AS times, COUNT(time) AS counts FROM" +
+		" (SELECT player, time FROM aion_player_rank WHERE count = ? ORDER BY player, time DESC ) GROUP BY player HAVING counts >= 5"
+	err = DB().Raw(sql, levelInt).Find(&results).Error
 	return results, err
 }

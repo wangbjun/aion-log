@@ -8,7 +8,7 @@
 export default {
   dev: {
     '/api/v1/*': {
-      target: 'http://127.0.0.1:8080',
+      target: process.env.AION_BACKEND_URL || 'http://127.0.0.1:18080',
       changeOrigin: false,
       pathRewrite: {
         '^': '',

@@ -40,6 +40,12 @@ export default [
                 component: './Rank',
               },
               {
+                name: '导入日志',
+                icon: 'UploadOutlined',
+                path: '/import',
+                component: './ImportLog',
+              },
+              {
                 component: './404',
               },
             ],

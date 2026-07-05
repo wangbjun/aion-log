@@ -1,48 +1,46 @@
 package model
 
 import (
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"log"
 	"os"
 	"strings"
 	"time"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+
+	_ "modernc.org/sqlite"
 )
 
 var defaultDB *gorm.DB
 
-func Init(initTable bool) {
+const BatchInsertSize = 2000
+
+func Init() {
 	config := &gorm.Config{
 		Logger: logger.New(log.New(os.Stdout, "\r\n", log.LstdFlags), logger.Config{
 			SlowThreshold: 500 * time.Millisecond,
-			LogLevel:      logger.Warn,
+			LogLevel:      logger.Error,
 			Colorful:      true,
 		}),
 	}
-	dbFile := "aion.db"
-	if initTable {
-		err := os.Remove(dbFile)
-		if err != nil && !os.IsNotExist(err) {
-			panic("failed to remove old database file: " + err.Error())
-		}
-	}
-	db, err := gorm.Open(sqlite.Open("aion.db"), config)
+	db, err := gorm.Open(sqlite.Dialector{
+		DriverName: "sqlite",
+		DSN:        "aion.db?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=temp_store(MEMORY)&_pragma=cache_size(-64000)",
+	}, config)
 	if err != nil {
 		panic("failed to connect database: " + err.Error())
 	}
-	if initTable {
-		defaultDB = db
-		err = createTables(db)
-		if err != nil {
-			panic("failed to create tables: " + err.Error())
-		}
-		err = importSkill()
-		if err != nil {
-			panic("failed to import skill: " + err.Error())
-		}
-	} else {
-		defaultDB = db.Debug()
+	sqlDB, err := db.DB()
+	if err != nil {
+		panic("failed to get database connection: " + err.Error())
+	}
+	sqlDB.SetMaxOpenConns(5)
+	sqlDB.SetMaxIdleConns(5)
+	defaultDB = db
+	if err := createTables(); err != nil {
+		panic("failed to create tables: " + err.Error())
 	}
 }
 
@@ -57,10 +55,10 @@ func importSkill() error {
 	}
 	for _, line := range strings.Split(string(file), "\n") {
 		split := strings.Split(line, ",")
-		if len(split) != 3 {
+		if len(split) != 2 {
 			continue
 		}
-		err := defaultDB.Exec("INSERT INTO aion_player_skill (skill, class) values (?, ?)", split[0], split[2]).Error
+		err := defaultDB.Exec("INSERT INTO aion_player_skill (skill, class) values (?, ?)", split[0], split[1]).Error
 		if err != nil {
 			return err
 		}
@@ -68,7 +66,7 @@ func importSkill() error {
 	return nil
 }
 
-func createTables(db *gorm.DB) error {
+func createTables() error {
 	createSql := []string{
 		`CREATE TABLE IF NOT EXISTS aion_chat_log (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -84,6 +82,9 @@ func createTables(db *gorm.DB) error {
             name TEXT DEFAULT NULL,
             type INTEGER DEFAULT NULL,
             class INTEGER DEFAULT NULL,
+            skill_count INTEGER DEFAULT 0,
+            kill_count INTEGER DEFAULT 0,
+            death_count INTEGER DEFAULT 0,
             time DATETIME DEFAULT NULL,
             critical_ratio REAL DEFAULT NULL,
             UNIQUE (name, type)
@@ -109,10 +110,39 @@ func createTables(db *gorm.DB) error {
 	}
 
 	for _, sql := range createSql {
-		err := db.Exec(sql).Error
+		err := defaultDB.Exec(sql).Error
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func ResetData() error {
+	tables := []string{
+		"aion_player_skill",
+		"aion_chat_log",
+		"aion_player_info",
+		"aion_player_rank",
+		"aion_timeline",
+	}
+	for _, table := range tables {
+		if err := defaultDB.Exec("DELETE FROM " + table).Error; err != nil {
+			return err
+		}
+	}
+	for _, table := range tables {
+		if err := defaultDB.Exec("DELETE FROM sqlite_sequence WHERE name = ?", table).Error; err != nil {
+			return err
+		}
+	}
+	err := createTables()
+	if err != nil {
+		panic("failed to create tables: " + err.Error())
+	}
+	err = importSkill()
+	if err != nil {
+		panic("failed to import skill: " + err.Error())
 	}
 	return nil
 }
